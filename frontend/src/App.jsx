@@ -11,6 +11,9 @@ const Dashboard = lazy(() => import('./components/Dashboard'));
 const StartWorkout = lazy(() => import('./components/StartWorkout'));
 const Progress = lazy(() => import('./components/Progress'));
 const Diet = lazy(() => import('./components/Diet'));
+const Requests = lazy(() => import('./components/Requests'));
+const Analytics = lazy(() => import('./components/Analytics'));
+const Settings = lazy(() => import('./components/Settings'));
 
 function RouteLoader() {
   return (
@@ -69,6 +72,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <Diet />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/requests"
+            element={
+              <ProtectedRoute>
+                <Requests />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <Analytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             }
           />

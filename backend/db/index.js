@@ -244,6 +244,40 @@ const mapRewardRow = (row) => {
   };
 };
 
+const mapContactSubmissionRow = (row) => {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    _id: String(row.id),
+    id: String(row.id),
+    name: row.name,
+    email: row.email,
+    company: row.company || '',
+    interest: row.interest,
+    message: row.message || '',
+    createdAt: row.created_at,
+  };
+};
+
+const mapWorkoutTemplateRow = (row) => {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    _id: String(row.id),
+    id: String(row.id),
+    user: String(row.user_id),
+    name: row.name,
+    goal: row.goal || '',
+    location: row.location || '',
+    exercises: parseJson(row.exercises_json, []),
+    createdAt: row.created_at,
+  };
+};
+
 const defaultPreferences = {
   workoutDaysPerWeek: 3,
   sessionDuration: 45,
@@ -340,6 +374,27 @@ const initDatabase = () => {
       metadata_json TEXT NOT NULL,
       awarded_at TEXT NOT NULL,
       UNIQUE (user_id, reward_key),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS contact_submissions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      company TEXT,
+      interest TEXT NOT NULL,
+      message TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS workout_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      goal TEXT,
+      location TEXT,
+      exercises_json TEXT NOT NULL,
+      created_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
@@ -473,6 +528,8 @@ module.exports = {
   mapDietPlanRow,
   mapProgressRow,
   mapRewardRow,
+  mapContactSubmissionRow,
+  mapWorkoutTemplateRow,
   createUser,
   getUserByEmail,
   getUserById,

@@ -25,8 +25,10 @@ import {
   FaUtensils,
 } from 'react-icons/fa';
 import { GiWeightLiftingUp } from 'react-icons/gi';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../lib/api';
 
 const featureCards = [
   {
@@ -110,6 +112,50 @@ const trustHighlights = [
 function LandingPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    email: '',
+    company: '',
+    interest: 'demo',
+    message: '',
+  });
+  const [contactState, setContactState] = useState({
+    submitting: false,
+    error: '',
+    success: '',
+  });
+
+  const handleContactChange = (event) => {
+    const { name, value } = event.target;
+    setContactForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleContactSubmit = async (event) => {
+    event.preventDefault();
+    setContactState({ submitting: true, error: '', success: '' });
+
+    try {
+      const response = await api.post('/contact', contactForm);
+      setContactState({
+        submitting: false,
+        error: '',
+        success: response.data.message,
+      });
+      setContactForm({
+        name: '',
+        email: '',
+        company: '',
+        interest: 'demo',
+        message: '',
+      });
+    } catch (error) {
+      setContactState({
+        submitting: false,
+        error: error.response?.data?.error || 'Unable to send your request right now.',
+        success: '',
+      });
+    }
+  };
 
   return (
     <div className="fitai-shell fitai-grid min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white">
@@ -504,20 +550,99 @@ function LandingPage() {
               Landing page to Signup to Onboarding to Dashboard to Workout to Progress to Diet.
             </p>
 
-            <div className="mt-8 grid gap-4 md:grid-cols-2">
-              <button
-                onClick={() => navigate('/signup')}
-                className="rounded-2xl bg-gradient-to-r from-fuchsia-600 to-cyan-600 px-6 py-4 font-semibold text-white shadow-lg"
-              >
-                Create Account
-              </button>
-              <button
-                onClick={() => navigate('/login')}
-                className="glass-morphism rounded-2xl px-6 py-4 font-semibold text-slate-100"
-              >
-                Login
-              </button>
-            </div>
+            <form onSubmit={handleContactSubmit} className="mt-8 space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-sm text-slate-300">Name</span>
+                  <input
+                    name="name"
+                    value={contactForm.name}
+                    onChange={handleContactChange}
+                    placeholder="Your name"
+                    className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm text-slate-300">Email</span>
+                  <input
+                    name="email"
+                    type="email"
+                    value={contactForm.email}
+                    onChange={handleContactChange}
+                    placeholder="name@example.com"
+                    className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-sm text-slate-300">Company or team</span>
+                  <input
+                    name="company"
+                    value={contactForm.company}
+                    onChange={handleContactChange}
+                    placeholder="Optional"
+                    className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm text-slate-300">Interest</span>
+                  <select
+                    name="interest"
+                    value={contactForm.interest}
+                    onChange={handleContactChange}
+                    className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+                  >
+                    <option value="demo">Book a demo</option>
+                    <option value="premium">Premium plan</option>
+                    <option value="partnership">Partnership</option>
+                    <option value="support">Product question</option>
+                  </select>
+                </label>
+              </div>
+
+              <label className="block">
+                <span className="mb-2 block text-sm text-slate-300">Message</span>
+                <textarea
+                  name="message"
+                  value={contactForm.message}
+                  onChange={handleContactChange}
+                  rows="4"
+                  placeholder="Tell us what you want to explore with FitAI"
+                  className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+                />
+              </label>
+
+              {contactState.error ? (
+                <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                  {contactState.error}
+                </div>
+              ) : null}
+
+              {contactState.success ? (
+                <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+                  {contactState.success}
+                </div>
+              ) : null}
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <button
+                  type="submit"
+                  disabled={contactState.submitting}
+                  className="rounded-2xl bg-gradient-to-r from-fuchsia-600 to-cyan-600 px-6 py-4 font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {contactState.submitting ? 'Sending request...' : 'Send Request'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="glass-morphism rounded-2xl px-6 py-4 font-semibold text-slate-100"
+                >
+                  Login
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </section>

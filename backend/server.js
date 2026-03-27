@@ -35,6 +35,8 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/contact', require('./routes/contact'));
 app.use('/api/workouts', require('./routes/workouts'));
 app.use('/api/diet', require('./routes/diet'));
 app.use('/api/progress', require('./routes/progress'));

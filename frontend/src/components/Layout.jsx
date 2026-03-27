@@ -6,6 +6,9 @@ const navItems = [
   { to: '/workout', label: 'Workout' },
   { to: '/progress', label: 'Progress' },
   { to: '/diet', label: 'Diet' },
+  { to: '/requests', label: 'Requests' },
+  { to: '/analytics', label: 'Analytics' },
+  { to: '/settings', label: 'Settings' },
 ];
 
 function Layout({ title, subtitle, children }) {

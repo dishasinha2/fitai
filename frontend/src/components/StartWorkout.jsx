@@ -9,22 +9,27 @@ function StartWorkout() {
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [catalog, setCatalog] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [workout, setWorkout] = useState([]);
   const [selectedExerciseId, setSelectedExerciseId] = useState('');
   const [guidance, setGuidance] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [templateName, setTemplateName] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   useEffect(() => {
     async function bootstrapWorkout() {
       try {
-        const [sessionResponse, exercisesResponse] = await Promise.all([
+        const [sessionResponse, exercisesResponse, templatesResponse] = await Promise.all([
           api.post('/workouts/session/start'),
           api.get('/workouts/exercises'),
+          api.get('/workouts/templates'),
         ]);
 
         setSession(sessionResponse.data);
         setCatalog(exercisesResponse.data);
+        setTemplates(templatesResponse.data);
         setWorkout(
           (sessionResponse.data.recommendation?.exercises || []).map((exercise) => ({
             exerciseId: exercise.exerciseId,
@@ -84,6 +89,48 @@ function StartWorkout() {
         currentIndex === index ? { ...entry, [field]: Number(value) || 0 } : entry,
       ),
     );
+  };
+
+  const applyTemplate = (template) => {
+    setWorkout(
+      (template.exercises || []).map((exercise) => ({
+        exerciseId: exercise.exerciseId,
+        name: exercise.name,
+        sets: Number(exercise.sets || 3),
+        reps: Number(exercise.reps || 10),
+        duration: Number(exercise.duration || 10),
+        weight: Number(exercise.weight || 0),
+        youtubeId: exercise.youtubeId || '',
+      })),
+    );
+    setMessage(`Template "${template.name}" applied to your live session.`);
+  };
+
+  const saveTemplate = async () => {
+    if (!templateName.trim()) {
+      setMessage('Enter a template name before saving a routine.');
+      return;
+    }
+
+    setSavingTemplate(true);
+    setMessage('');
+
+    try {
+      const response = await api.post('/workouts/templates', {
+        name: templateName,
+        goal: user?.fitnessGoal || 'maintenance',
+        location: user?.location || 'gym',
+        exercises: workout,
+      });
+
+      setTemplates((current) => [response.data, ...current]);
+      setTemplateName('');
+      setMessage(`Template "${response.data.name}" saved.`);
+    } catch (error) {
+      setMessage(error.response?.data?.error || 'Unable to save template.');
+    } finally {
+      setSavingTemplate(false);
+    }
   };
 
   const saveWorkout = async () => {
@@ -184,6 +231,57 @@ function StartWorkout() {
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+
+          <div className="glass-card glass-morphism rounded-[2rem] p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="section-title text-sm font-semibold text-fuchsia-300">Saved Templates</p>
+                <h3 className="mt-2 text-2xl font-semibold text-white">Reusable workout routines</h3>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  value={templateName}
+                  onChange={(event) => setTemplateName(event.target.value)}
+                  placeholder="Template name"
+                  className="input-3d rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-fuchsia-400"
+                />
+                <button
+                  type="button"
+                  onClick={saveTemplate}
+                  disabled={!workout.length || savingTemplate}
+                  className="rounded-2xl bg-fuchsia-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {savingTemplate ? 'Saving...' : 'Save Template'}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              {templates.length === 0 && (
+                <p className="text-sm text-slate-400">No saved templates yet. Save your current routine to reuse it later.</p>
+              )}
+              {templates.map((template) => (
+                <button
+                  key={template._id}
+                  type="button"
+                  onClick={() => applyTemplate(template)}
+                  className="feature-panel glass-morphism rounded-3xl p-5 text-left"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-semibold text-white">{template.name}</p>
+                      <p className="mt-1 text-sm text-slate-400 capitalize">
+                        {template.goal?.replace('_', ' ')} • {template.location || 'gym'} • {template.exercises.length} exercises
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-fuchsia-400/10 px-3 py-1 text-xs font-medium text-fuchsia-200">
+                      Apply
+                    </span>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         </section>

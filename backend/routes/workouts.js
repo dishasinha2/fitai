@@ -6,6 +6,7 @@ const { calculateWorkoutTotals, getDayKey, calculateStreak, syncRewardsForStreak
 const {
   db,
   mapExerciseRow,
+  mapWorkoutTemplateRow,
   mapWorkoutRow,
   getUserById,
   toJson,
@@ -29,6 +30,62 @@ router.get('/exercises', async (req, res) => {
   try {
     const exercises = db.prepare('SELECT * FROM exercises ORDER BY category ASC, name ASC').all().map(mapExerciseRow);
     res.json(exercises);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.get('/templates', authMiddleware, (req, res) => {
+  try {
+    const templates = db
+      .prepare('SELECT * FROM workout_templates WHERE user_id = ? ORDER BY created_at DESC')
+      .all(Number(req.user.id))
+      .map(mapWorkoutTemplateRow);
+
+    res.json(templates);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/templates', authMiddleware, (req, res) => {
+  const { name, exercises = [], goal = '', location = '' } = req.body || {};
+
+  try {
+    if (!name?.trim()) {
+      return res.status(400).json({ error: 'Template name is required.' });
+    }
+
+    if (!Array.isArray(exercises) || exercises.length === 0) {
+      return res.status(400).json({ error: 'Add at least one exercise to save a template.' });
+    }
+
+    const createdAt = new Date().toISOString();
+    const result = db
+      .prepare(`
+        INSERT INTO workout_templates (
+          user_id,
+          name,
+          goal,
+          location,
+          exercises_json,
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `)
+      .run(
+        Number(req.user.id),
+        name.trim(),
+        goal || '',
+        location || '',
+        toJson(exercises, []),
+        createdAt,
+      );
+
+    const template = mapWorkoutTemplateRow(
+      db.prepare('SELECT * FROM workout_templates WHERE id = ?').get(result.lastInsertRowid),
+    );
+
+    res.status(201).json(template);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
