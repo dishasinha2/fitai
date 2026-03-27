@@ -1,17 +1,24 @@
 const express = require('express');
 const axios = require('axios');
-const Workout = require('../models/Workout');
-const Exercise = require('../models/Exercise');
-const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
 const { buildRecommendation } = require('../services/recommendationEngine');
 const { calculateWorkoutTotals, getDayKey, calculateStreak, syncRewardsForStreak } = require('../services/analytics');
+const {
+  db,
+  mapExerciseRow,
+  mapWorkoutRow,
+  getUserById,
+  toJson,
+} = require('../db');
 
 const router = express.Router();
 
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const workouts = await Workout.find({ user: req.user.id }).sort({ date: -1 });
+    const workouts = db
+      .prepare('SELECT * FROM workouts WHERE user_id = ? ORDER BY date DESC')
+      .all(Number(req.user.id))
+      .map(mapWorkoutRow);
     res.json(workouts);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -20,7 +27,7 @@ router.get('/', authMiddleware, async (req, res) => {
 
 router.get('/exercises', async (req, res) => {
   try {
-    const exercises = await Exercise.find().sort({ category: 1, name: 1 });
+    const exercises = db.prepare('SELECT * FROM exercises ORDER BY category ASC, name ASC').all().map(mapExerciseRow);
     res.json(exercises);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -29,8 +36,11 @@ router.get('/exercises', async (req, res) => {
 
 router.get('/recommendations', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    const recentWorkouts = await Workout.find({ user: req.user.id }).sort({ date: -1 }).limit(5);
+    const user = getUserById(req.user.id);
+    const recentWorkouts = db
+      .prepare('SELECT * FROM workouts WHERE user_id = ? ORDER BY date DESC LIMIT 5')
+      .all(Number(req.user.id))
+      .map(mapWorkoutRow);
     const plan = await buildRecommendation({ user, previousWorkouts: recentWorkouts });
     res.json(plan);
   } catch (error) {
@@ -40,8 +50,11 @@ router.get('/recommendations', authMiddleware, async (req, res) => {
 
 router.post('/session/start', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    const recentWorkouts = await Workout.find({ user: req.user.id }).sort({ date: -1 }).limit(5);
+    const user = getUserById(req.user.id);
+    const recentWorkouts = db
+      .prepare('SELECT * FROM workouts WHERE user_id = ? ORDER BY date DESC LIMIT 5')
+      .all(Number(req.user.id))
+      .map(mapWorkoutRow);
     const recommendation = await buildRecommendation({ user, previousWorkouts: recentWorkouts });
 
     res.json({
@@ -71,17 +84,40 @@ router.post('/', authMiddleware, async (req, res) => {
 
   try {
     const totals = calculateWorkoutTotals(exercises);
-    const workout = await Workout.create({
-      user: req.user.id,
-      date: new Date(),
-      dayKey: getDayKey(),
-      exercises,
-      location,
-      aiSummary,
-      ...totals,
-    });
+    const createdAt = new Date().toISOString();
+    const result = db
+      .prepare(`
+        INSERT INTO workouts (
+          user_id,
+          date,
+          day_key,
+          exercises_json,
+          total_duration,
+          total_sets,
+          total_reps,
+          estimated_calories,
+          location,
+          ai_summary
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      .run(
+        Number(req.user.id),
+        createdAt,
+        getDayKey(new Date(createdAt)),
+        toJson(exercises, []),
+        totals.totalDuration,
+        totals.totalSets,
+        totals.totalReps,
+        totals.estimatedCalories,
+        location || '',
+        aiSummary || '',
+      );
 
-    const workouts = await Workout.find({ user: req.user.id }).sort({ date: -1 });
+    const workout = mapWorkoutRow(db.prepare('SELECT * FROM workouts WHERE id = ?').get(result.lastInsertRowid));
+    const workouts = db
+      .prepare('SELECT * FROM workouts WHERE user_id = ? ORDER BY date DESC')
+      .all(Number(req.user.id))
+      .map(mapWorkoutRow);
     const streak = calculateStreak(workouts);
     const newRewards = await syncRewardsForStreak(req.user.id, streak);
 
@@ -97,7 +133,9 @@ router.post('/', authMiddleware, async (req, res) => {
 
 router.get('/guidance/:exerciseId', async (req, res) => {
   try {
-    const exercise = await Exercise.findById(req.params.exerciseId);
+    const exercise = mapExerciseRow(
+      db.prepare('SELECT * FROM exercises WHERE id = ?').get(Number(req.params.exerciseId)),
+    );
     if (!exercise) {
       return res.status(404).json({ error: 'Exercise not found.' });
     }

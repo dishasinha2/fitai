@@ -15,7 +15,7 @@ FitAI is a full-stack AI-powered fitness assistant for gym users and home workou
 
 - Frontend: React + Tailwind CSS + React Router + Chart.js
 - Backend: Node.js + Express
-- Database: MongoDB with Mongoose
+- Database: SQLite (SQL) with `better-sqlite3`
 - AI logic: Rule-based recommendation engine designed for future LLM extension
 - Exercise guidance: Seeded YouTube embeds with YouTube API fallback support
 
@@ -23,49 +23,33 @@ FitAI is a full-stack AI-powered fitness assistant for gym users and home workou
 
 ```text
 fitai/
-├── backend/
-│   ├── middleware/
-│   │   └── auth.js
-│   ├── models/
-│   │   ├── DietPlan.js
-│   │   ├── Exercise.js
-│   │   ├── Progress.js
-│   │   ├── Reward.js
-│   │   ├── User.js
-│   │   └── Workout.js
-│   ├── routes/
-│   │   ├── auth.js
-│   │   ├── diet.js
-│   │   ├── progress.js
-│   │   ├── rewards.js
-│   │   └── workouts.js
-│   ├── services/
-│   │   ├── analytics.js
-│   │   ├── dietEngine.js
-│   │   └── recommendationEngine.js
-│   ├── .env.example
-│   ├── seed.js
-│   └── server.js
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── Diet.jsx
-│   │   │   ├── Layout.jsx
-│   │   │   ├── Login.jsx
-│   │   │   ├── Progress.jsx
-│   │   │   ├── ProtectedRoute.jsx
-│   │   │   ├── Signup.jsx
-│   │   │   └── StartWorkout.jsx
-│   │   ├── lib/
-│   │   │   ├── api.js
-│   │   │   └── session.js
-│   │   ├── App.css
-│   │   ├── App.jsx
-│   │   ├── index.css
-│   │   └── main.jsx
-│   └── .env.example
-└── README.md
+|-- backend/
+|   |-- db/
+|   |   `-- index.js
+|   |-- middleware/
+|   |   `-- auth.js
+|   |-- routes/
+|   |   |-- auth.js
+|   |   |-- diet.js
+|   |   |-- progress.js
+|   |   |-- rewards.js
+|   |   `-- workouts.js
+|   |-- services/
+|   |   |-- analytics.js
+|   |   |-- dietEngine.js
+|   |   `-- recommendationEngine.js
+|   |-- .env.example
+|   |-- fitai.sqlite
+|   |-- seed.js
+|   `-- server.js
+|-- frontend/
+|   |-- src/
+|   |   |-- components/
+|   |   |-- context/
+|   |   |-- lib/
+|   |   `-- pages/
+|   `-- .env.example
+`-- README.md
 ```
 
 ## Core Modules
@@ -112,13 +96,13 @@ fitai/
 - Reward points
 - 7-day and 30-day badge logic
 
-## Database Collections
+## SQL Tables
 
 - `users`
 - `workouts`
 - `exercises`
-- `dietplans`
-- `progresses`
+- `diet_plans`
+- `progress_logs`
 - `rewards`
 
 ## API Endpoints
@@ -175,6 +159,8 @@ npm run seed
 npm run dev
 ```
 
+The backend creates `backend/fitai.sqlite` automatically and seeds exercises if the table is empty.
+
 ### Frontend
 
 ```bash
@@ -183,12 +169,14 @@ npm install
 npm run dev
 ```
 
-Then open `http://localhost:5173`.
+Backend runs on `http://localhost:5001` by default.
+
+Then open `http://localhost:5174`.
 
 ## Verification
 
 - Frontend production build completed successfully with `npm run build`
-- Backend route files passed `node --check`
+- Backend now runs on SQLite without requiring MongoDB
 
 ## Future AI Extension
 

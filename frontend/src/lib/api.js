@@ -2,7 +2,7 @@ import axios from 'axios';
 import { clearSession, getToken } from './session';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api',
 });
 
 api.interceptors.request.use((config) => {

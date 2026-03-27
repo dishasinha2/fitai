@@ -1,4 +1,4 @@
-const Exercise = require('../models/Exercise');
+const { db, mapExerciseRow } = require('../db');
 
 const getDifficultyTargets = (activityLevel) => {
   if (activityLevel === 'advanced') {
@@ -32,21 +32,48 @@ const buildAiSummary = ({ user, selectedExercises }) => {
 const buildRecommendation = async ({ user, previousWorkouts = [] }) => {
   const goalCategories = getGoalCategories(user.fitnessGoal);
   const difficulty = getDifficultyTargets(user.activityLevel);
-  const recentExerciseNames = previousWorkouts.flatMap((workout) => workout.exercises.map((exercise) => exercise.name));
+  const recentExerciseNames = previousWorkouts.flatMap((workout) =>
+    (workout.exercises || []).map((exercise) => exercise.name),
+  );
 
-  const locationQuery =
+  const baseRows =
     user.location === 'home'
-      ? { $or: [{ location: 'home' }, { location: 'both' }, { equipment: 'none' }] }
-      : { $or: [{ location: 'gym' }, { location: 'both' }] };
+      ? db
+          .prepare(
+            `
+              SELECT * FROM exercises
+              WHERE (location IN ('home', 'both') OR equipment = 'none')
+                AND category IN (${goalCategories.map(() => '?').join(', ')})
+                AND intensity IN (${difficulty.intensity.map(() => '?').join(', ')})
+              ORDER BY category, name
+            `,
+          )
+          .all(...goalCategories, ...difficulty.intensity)
+      : db
+          .prepare(
+            `
+              SELECT * FROM exercises
+              WHERE location IN ('gym', 'both')
+                AND category IN (${goalCategories.map(() => '?').join(', ')})
+                AND intensity IN (${difficulty.intensity.map(() => '?').join(', ')})
+              ORDER BY category, name
+            `,
+          )
+          .all(...goalCategories, ...difficulty.intensity);
 
-  let candidates = await Exercise.find({
-    ...locationQuery,
-    category: { $in: goalCategories },
-    intensity: { $in: difficulty.intensity },
-  }).lean();
+  let candidates = baseRows.map(mapExerciseRow);
 
   if (!candidates.length) {
-    candidates = await Exercise.find(locationQuery).lean();
+    const fallbackRows =
+      user.location === 'home'
+        ? db
+            .prepare(
+              "SELECT * FROM exercises WHERE location IN ('home', 'both') OR equipment = 'none' ORDER BY category, name",
+            )
+            .all()
+        : db.prepare("SELECT * FROM exercises WHERE location IN ('gym', 'both') ORDER BY category, name").all();
+
+    candidates = fallbackRows.map(mapExerciseRow);
   }
 
   const freshCandidates = candidates.filter((exercise) => !recentExerciseNames.includes(exercise.name));

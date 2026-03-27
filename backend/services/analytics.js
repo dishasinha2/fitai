@@ -1,4 +1,4 @@
-const Reward = require('../models/Reward');
+const { db, mapRewardRow, toJson } = require('../db');
 
 const getDayKey = (value = new Date()) => value.toISOString().split('T')[0];
 
@@ -62,18 +62,39 @@ const syncRewardsForStreak = async (userId, streak) => {
 
   for (const reward of rewardDefinitions) {
     if (streak >= reward.threshold) {
-      const existing = await Reward.findOne({ user: userId, key: reward.key });
+      const existing = db
+        .prepare('SELECT * FROM rewards WHERE user_id = ? AND reward_key = ?')
+        .get(Number(userId), reward.key);
+
       if (!existing) {
-        const created = await Reward.create({
-          user: userId,
-          key: reward.key,
-          type: reward.type,
-          title: reward.title,
-          description: reward.description,
-          points: reward.points,
-          metadata: { streakDays: streak },
-        });
-        awarded.push(created);
+        const awardedAt = new Date().toISOString();
+        const result = db
+          .prepare(`
+            INSERT INTO rewards (
+              user_id,
+              type,
+              reward_key,
+              title,
+              description,
+              points,
+              metadata_json,
+              awarded_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `)
+          .run(
+            Number(userId),
+            reward.type,
+            reward.key,
+            reward.title,
+            reward.description,
+            reward.points,
+            toJson({ streakDays: streak }, {}),
+            awardedAt,
+          );
+
+        awarded.push(
+          mapRewardRow(db.prepare('SELECT * FROM rewards WHERE id = ?').get(result.lastInsertRowid)),
+        );
       }
     }
   }

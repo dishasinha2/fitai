@@ -1,16 +1,21 @@
 const express = require('express');
-const Reward = require('../models/Reward');
-const Workout = require('../models/Workout');
 const authMiddleware = require('../middleware/auth');
 const { calculateStreak, syncRewardsForStreak } = require('../services/analytics');
+const { db, mapRewardRow, mapWorkoutRow } = require('../db');
 
 const router = express.Router();
 
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const workouts = await Workout.find({ user: req.user.id }).sort({ date: -1 });
+    const workouts = db
+      .prepare('SELECT * FROM workouts WHERE user_id = ? ORDER BY date DESC')
+      .all(Number(req.user.id))
+      .map(mapWorkoutRow);
     const streak = calculateStreak(workouts);
-    const rewards = await Reward.find({ user: req.user.id }).sort({ awardedAt: -1 });
+    const rewards = db
+      .prepare('SELECT * FROM rewards WHERE user_id = ? ORDER BY awarded_at DESC')
+      .all(Number(req.user.id))
+      .map(mapRewardRow);
 
     res.json({
       streak,
@@ -24,10 +29,16 @@ router.get('/', authMiddleware, async (req, res) => {
 
 router.post('/refresh', authMiddleware, async (req, res) => {
   try {
-    const workouts = await Workout.find({ user: req.user.id }).sort({ date: -1 });
+    const workouts = db
+      .prepare('SELECT * FROM workouts WHERE user_id = ? ORDER BY date DESC')
+      .all(Number(req.user.id))
+      .map(mapWorkoutRow);
     const streak = calculateStreak(workouts);
     const awarded = await syncRewardsForStreak(req.user.id, streak);
-    const rewards = await Reward.find({ user: req.user.id }).sort({ awardedAt: -1 });
+    const rewards = db
+      .prepare('SELECT * FROM rewards WHERE user_id = ? ORDER BY awarded_at DESC')
+      .all(Number(req.user.id))
+      .map(mapRewardRow);
 
     res.json({
       streak,
