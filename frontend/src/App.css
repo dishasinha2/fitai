@@ -1,0 +1,164 @@
+.fitai-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  perspective: 1400px;
+}
+
+.fitai-shell::before,
+.fitai-shell::after {
+  content: '';
+  position: fixed;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 999px;
+  filter: blur(80px);
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.fitai-shell::before {
+  top: -8rem;
+  left: -8rem;
+  background: rgba(34, 197, 94, 0.25);
+}
+
+.fitai-shell::after {
+  right: -8rem;
+  bottom: -8rem;
+  background: rgba(56, 189, 248, 0.22);
+}
+
+.fitai-grid {
+  position: relative;
+  z-index: 1;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.glass-card {
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(20px);
+  transform-style: preserve-3d;
+}
+
+.metric-glow {
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.06),
+    0 16px 40px rgba(8, 15, 32, 0.35);
+}
+
+.hero-gradient {
+  background:
+    linear-gradient(120deg, rgba(34, 197, 94, 0.18), rgba(56, 189, 248, 0.14) 48%, rgba(15, 23, 42, 0.2)),
+    rgba(15, 23, 42, 0.88);
+}
+
+.hero-3d {
+  position: relative;
+  overflow: hidden;
+  transform: rotateX(6deg) rotateY(-7deg);
+}
+
+.hero-3d::before {
+  content: '';
+  position: absolute;
+  inset: 1.2rem;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(125, 211, 252, 0.14);
+  transform: translateZ(40px);
+  pointer-events: none;
+}
+
+.hero-3d::after {
+  content: '';
+  position: absolute;
+  inset: auto -15% -35% 20%;
+  height: 10rem;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.3), transparent 60%);
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+.tilt-card {
+  transform: rotateX(5deg) rotateY(7deg);
+  box-shadow:
+    0 28px 80px rgba(2, 8, 23, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.floating-panel {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(12, 18, 34, 0.82));
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow:
+    0 20px 45px rgba(2, 8, 23, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transform: translateY(0) translateZ(26px);
+  animation: floatCard 6s ease-in-out infinite;
+}
+
+.floating-delay-1 {
+  animation-delay: 0s;
+}
+
+.floating-delay-2 {
+  animation-delay: 0.8s;
+}
+
+.floating-delay-3 {
+  animation-delay: 1.6s;
+}
+
+.input-3d {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 12px 24px rgba(2, 8, 23, 0.28);
+}
+
+.input-3d:focus {
+  transform: translateY(-1px);
+}
+
+.section-title {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(74, 222, 128, 0.28);
+  background: rgba(22, 163, 74, 0.12);
+  color: #bbf7d0;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+.chart-shell canvas {
+  max-height: 320px;
+}
+
+@keyframes floatCard {
+  0%,
+  100% {
+    transform: translateY(0) translateZ(26px);
+  }
+  50% {
+    transform: translateY(-8px) translateZ(30px);
+  }
+}
+
+@media (max-width: 1024px) {
+  .hero-3d,
+  .tilt-card {
+    transform: none;
+  }
+}
