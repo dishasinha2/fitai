@@ -75,7 +75,7 @@ function Signup() {
       };
       const response = await api.post('/auth/register', payload);
       saveSession(response.data);
-      navigate('/dashboard');
+      navigate('/onboarding');
     } catch (requestError) {
       setError(requestError.response?.data?.error || 'Unable to create account.');
     } finally {
@@ -87,7 +87,7 @@ function Signup() {
     <div className="fitai-shell fitai-grid min-h-screen">
       <PublicHeader />
       <div className="mx-auto flex min-h-[calc(100vh-92px)] w-full max-w-5xl items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
-      <div className="glass-card glass-morphism tilt-card w-full rounded-[2rem] p-8 sm:p-10">
+        <div className="glass-card glass-morphism tilt-card w-full rounded-[2rem] p-8 sm:p-10">
         <div className="max-w-3xl">
           <p className="section-title text-sm font-semibold text-cyan-300">Signup</p>
           <h1 className="mt-3 text-4xl font-semibold text-white">Create your FitAI athlete profile</h1>
@@ -220,7 +220,7 @@ function Signup() {
             </p>
           </div>
         </form>
-      </div>
+        </div>
       </div>
     </div>
   );
