@@ -84,14 +84,14 @@ function Signup() {
   };
 
   return (
-    <div className="fitai-shell fitai-grid min-h-screen">
+    <div className="fitai-ref-app-shell fitai-ref-app-grid min-h-screen">
       <PublicHeader />
       <div className="mx-auto flex min-h-[calc(100vh-92px)] w-full max-w-5xl items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
-        <div className="glass-card glass-morphism tilt-card w-full rounded-[2rem] p-8 sm:p-10">
+        <div className="fitai-ref-auth-card w-full p-8 sm:p-10">
         <div className="max-w-3xl">
-          <p className="section-title text-sm font-semibold text-cyan-300">Signup</p>
-          <h1 className="mt-3 text-4xl font-semibold text-white">Create your FitAI athlete profile</h1>
-          <p className="mt-3 text-slate-400">
+          <p className="fitai-ref-kicker">Signup</p>
+          <h1 className="fitai-ref-app-title mt-3">Create your FitAI athlete profile</h1>
+          <p className="fitai-ref-copy mt-3">
             Set your body metrics, goal, activity level, and workout location so the AI trainer and diet planner can
             personalize everything from day one.
           </p>
@@ -115,7 +115,7 @@ function Signup() {
                 value={form[name]}
                 onChange={handleChange}
                 autoComplete={name === 'password' ? 'new-password' : name}
-                className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+                className="fitai-ref-input"
               />
             </label>
           ))}
@@ -126,7 +126,7 @@ function Signup() {
               name="fitnessGoal"
               value={form.fitnessGoal}
               onChange={handleChange}
-              className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+              className="fitai-ref-input"
             >
               <option value="fat_loss">Fat loss</option>
               <option value="muscle_gain">Muscle gain</option>
@@ -140,7 +140,7 @@ function Signup() {
               name="activityLevel"
               value={form.activityLevel}
               onChange={handleChange}
-              className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+              className="fitai-ref-input"
             >
               <option value="beginner">Beginner</option>
               <option value="intermediate">Intermediate</option>
@@ -154,7 +154,7 @@ function Signup() {
               name="location"
               value={form.location}
               onChange={handleChange}
-              className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+              className="fitai-ref-input"
             >
               <option value="gym">Gym</option>
               <option value="home">Home workout mode</option>
@@ -170,7 +170,7 @@ function Signup() {
               max="7"
               value={form.preferences.workoutDaysPerWeek}
               onChange={handlePreferenceChange}
-              className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+              className="fitai-ref-input"
             />
           </label>
 
@@ -183,7 +183,7 @@ function Signup() {
               max="120"
               value={form.preferences.sessionDuration}
               onChange={handlePreferenceChange}
-              className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+              className="fitai-ref-input"
             />
           </label>
 
@@ -193,7 +193,7 @@ function Signup() {
               name="dietaryPreference"
               value={form.preferences.dietaryPreference}
               onChange={handlePreferenceChange}
-              className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+              className="fitai-ref-input"
             >
               <option value="balanced">Balanced</option>
               <option value="high_protein">High protein</option>
@@ -207,14 +207,14 @@ function Signup() {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-2xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="fitai-ref-action px-6 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? 'Creating account...' : 'Create FitAI Account'}
             </button>
 
             <p className="text-sm text-slate-400">
               Already have an account?{' '}
-              <Link to="/login" className="font-medium text-cyan-300 hover:text-cyan-200">
+              <Link to="/login" className="font-medium text-rose-300 hover:text-rose-200">
                 Login here
               </Link>
             </p>

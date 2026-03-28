@@ -60,6 +60,8 @@ function Onboarding() {
     <Layout
       title="Finish Setup"
       subtitle="Take one quick step to personalize your coach voice, focus areas, and training direction before entering the dashboard."
+      heroLabel="Personalize FitAI"
+      heroImage="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1600&q=80"
     >
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <section className="glass-card glass-morphism rounded-[2rem] p-6 sm:p-8">

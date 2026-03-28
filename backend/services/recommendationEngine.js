@@ -29,11 +29,52 @@ const buildAiSummary = ({ user, selectedExercises }) => {
   return `FitAI planned ${focus} for ${user.fitnessGoal.replace('_', ' ')} using ${selectedExercises.length} exercises tailored to ${user.activityLevel} level.`;
 };
 
+const scoreExercise = ({ exercise, user, goalCategories, recentExerciseNames, recentMuscleGroups }) => {
+  let score = 40;
+
+  if (goalCategories.includes(exercise.category)) {
+    score += 24;
+  }
+
+  if (exercise.location === user.location || exercise.location === 'both') {
+    score += 18;
+  }
+
+  if (user.location === 'home' && exercise.equipment === 'none') {
+    score += 12;
+  }
+
+  if (!recentExerciseNames.includes(exercise.name)) {
+    score += 14;
+  } else {
+    score -= 10;
+  }
+
+  if (!recentMuscleGroups.includes(exercise.muscleGroup)) {
+    score += 10;
+  } else {
+    score -= 4;
+  }
+
+  if (user.fitnessGoal === 'muscle_gain' && exercise.category === 'strength') {
+    score += 8;
+  }
+
+  if (user.fitnessGoal === 'fat_loss' && ['conditioning', 'cardio'].includes(exercise.category)) {
+    score += 8;
+  }
+
+  return score;
+};
+
 const buildRecommendation = async ({ user, previousWorkouts = [] }) => {
   const goalCategories = getGoalCategories(user.fitnessGoal);
   const difficulty = getDifficultyTargets(user.activityLevel);
   const recentExerciseNames = previousWorkouts.flatMap((workout) =>
     (workout.exercises || []).map((exercise) => exercise.name),
+  );
+  const recentMuscleGroups = previousWorkouts.flatMap((workout) =>
+    (workout.exercises || []).map((exercise) => exercise.muscleGroup).filter(Boolean),
   );
 
   const baseRows =
@@ -76,8 +117,21 @@ const buildRecommendation = async ({ user, previousWorkouts = [] }) => {
     candidates = fallbackRows.map(mapExerciseRow);
   }
 
-  const freshCandidates = candidates.filter((exercise) => !recentExerciseNames.includes(exercise.name));
-  const selectedExercises = (freshCandidates.length ? freshCandidates : candidates).slice(0, 4).map((exercise, index) => ({
+  const scoredCandidates = candidates
+    .map((exercise) => ({
+      ...exercise,
+      recommendationScore: scoreExercise({
+        exercise,
+        user,
+        goalCategories,
+        recentExerciseNames,
+        recentMuscleGroups,
+      }),
+    }))
+    .sort((left, right) => right.recommendationScore - left.recommendationScore);
+
+  const freshCandidates = scoredCandidates.filter((exercise) => !recentExerciseNames.includes(exercise.name));
+  const selectedExercises = (freshCandidates.length ? freshCandidates : scoredCandidates).slice(0, 4).map((exercise, index) => ({
     exerciseId: exercise._id,
     name: exercise.name,
     category: exercise.category,
@@ -85,6 +139,7 @@ const buildRecommendation = async ({ user, previousWorkouts = [] }) => {
     instructions: exercise.instructions,
     youtubeId: exercise.youtubeId,
     equipment: exercise.equipment,
+    recommendationScore: exercise.recommendationScore,
     sets: difficulty.sets,
     reps: exercise.category === 'cardio' ? difficulty.reps + 2 : difficulty.reps,
     duration: index === 0 && exercise.category === 'mobility' ? 8 : difficulty.duration,
@@ -97,6 +152,12 @@ const buildRecommendation = async ({ user, previousWorkouts = [] }) => {
   return {
     focus: goalCategories[0],
     aiSummary: buildAiSummary({ user, selectedExercises }),
+    recommendationInsights: {
+      basedOnGoal: user.fitnessGoal,
+      basedOnLocation: user.location,
+      recentExerciseCount: recentExerciseNames.length,
+      recentMuscleGroups: [...new Set(recentMuscleGroups)].slice(0, 4),
+    },
     exercises: selectedExercises,
     nextExercise: selectedExercises[0] || null,
   };

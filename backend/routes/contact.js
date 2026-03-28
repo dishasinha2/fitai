@@ -1,12 +1,13 @@
 const express = require('express');
 const { db, mapContactSubmissionRow } = require('../db');
 const authMiddleware = require('../middleware/auth');
+const adminMiddleware = require('../middleware/admin');
 
 const router = express.Router();
 
 const isValidEmail = (email = '') => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-router.get('/', authMiddleware, (_req, res) => {
+router.get('/', authMiddleware, adminMiddleware, (_req, res) => {
   try {
     const submissions = db
       .prepare('SELECT * FROM contact_submissions ORDER BY created_at DESC')

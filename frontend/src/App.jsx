@@ -14,6 +14,8 @@ const Diet = lazy(() => import('./components/Diet'));
 const Requests = lazy(() => import('./components/Requests'));
 const Analytics = lazy(() => import('./components/Analytics'));
 const Settings = lazy(() => import('./components/Settings'));
+const Notifications = lazy(() => import('./components/Notifications'));
+const AdminOverview = lazy(() => import('./components/AdminOverview'));
 
 function RouteLoader() {
   return (
@@ -78,7 +80,7 @@ function App() {
           <Route
             path="/requests"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute adminOnly>
                 <Requests />
               </ProtectedRoute>
             }
@@ -86,8 +88,16 @@ function App() {
           <Route
             path="/analytics"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute adminOnly>
                 <Analytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute adminOnly>
+                <AdminOverview />
               </ProtectedRoute>
             }
           />
@@ -96,6 +106,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <Notifications />
               </ProtectedRoute>
             }
           />

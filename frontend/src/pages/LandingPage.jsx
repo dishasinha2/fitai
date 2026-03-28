@@ -1,724 +1,573 @@
-import {
-  FaArrowRight,
-  FaBrain,
-  FaChartLine,
-  FaCheckCircle,
-  FaClock,
-  FaEnvelope,
-  FaDumbbell,
-  FaFire,
-  FaGithub,
-  FaHeartbeat,
-  FaInstagram,
-  FaLinkedin,
-  FaMapMarkerAlt,
-  FaPhoneAlt,
-  FaPlay,
-  FaQuoteLeft,
-  FaRobot,
-  FaRocket,
-  FaShieldAlt,
-  FaStar,
-  FaTrophy,
-  FaTwitter,
-  FaUserAstronaut,
-  FaUtensils,
-} from 'react-icons/fa';
-import { GiWeightLiftingUp } from 'react-icons/gi';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { FaArrowRight, FaCheck, FaDumbbell, FaPlay, FaStar } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../lib/api';
 
 const featureCards = [
   {
-    icon: FaDumbbell,
-    title: 'AI Personal Trainer',
-    description:
-      'Real-time workout tracking and personalized exercise suggestions based on your goals and progress.',
-    accent: 'from-fuchsia-500 to-cyan-500',
+    number: '01',
+    icon: 'AI',
+    title: 'AI Coaching',
+    description: 'Real-time feedback, adaptive programming, and next-move recommendations based on your performance history.',
   },
   {
-    icon: FaUtensils,
-    title: 'Smart Diet Planner',
-    description:
-      'Generates calorie and macro-aware diet plans using BMI and activity level for practical daily nutrition.',
-    accent: 'from-emerald-500 to-teal-500',
+    number: '02',
+    icon: 'PR',
+    title: 'Progress Analytics',
+    description: 'Visual PR charts, volume load trends, body composition tracking, and weekly performance scores.',
   },
   {
-    icon: FaTrophy,
-    title: 'Progress and Rewards',
-    description:
-      'Tracks weight, workout consistency, performance, streaks, badges, and points to keep you motivated.',
-    accent: 'from-amber-500 to-orange-500',
+    number: '03',
+    icon: 'DI',
+    title: 'Nutrition Engine',
+    description: 'BMI-aware meal plans, macro tracking, grocery checklists, and calorie targets that adjust daily.',
+  },
+  {
+    number: '04',
+    icon: 'HM',
+    title: 'Gym and Home Modes',
+    description: 'Fully equipped gym programs or zero-equipment bodyweight routines with the same quality either way.',
+  },
+  {
+    number: '05',
+    icon: 'RW',
+    title: 'Rewards System',
+    description: 'Points, streaks, badges, and reminders that make consistency feel genuinely rewarding.',
+  },
+  {
+    number: '06',
+    icon: 'AP',
+    title: 'Auto Periodization',
+    description: 'Smarter overload, deload weeks, and fatigue-aware recommendations handled automatically.',
   },
 ];
 
-const workflowSteps = [
-  ['Login Securely', 'Access your personalized fitness dashboard with secure authentication.', FaShieldAlt],
-  ['Set Profile and Goals', 'Define your fitness goal, activity level, and preferred workout location.', FaUserAstronaut],
-  ['Start Workout Session', 'Begin an AI-guided workout session with structured session defaults.', FaPlay],
-  ['Track Sets, Reps and Time', 'Log your exercise performance with a clean workout flow.', FaClock],
-  ['Get Next Exercise Suggestion', 'FitAI recommends the next best movement from your recent history.', FaBrain],
-  ['Update Progress and Rewards', 'Earn streaks, badges, and points while your progress charts update.', FaTrophy],
+const splitList = [
+  'AI adapts your program weekly based on real performance data',
+  'Works equally well for gym athletes and home trainers',
+  'Nutrition engine syncs automatically with your training load',
+  'Streak system and badges reinforce long-term consistency',
+  'Full progress analytics updated after every session',
 ];
 
 const pricingPlans = [
   {
-    name: 'Starter',
-    price: 'Free',
-    subtitle: 'Perfect for getting started with the workflow',
-    features: ['AI workout suggestions', 'Basic progress tracking', 'Home and gym mode'],
+    tier: 'Starter',
+    price: '0',
+    per: 'Free forever',
+    features: ['AI workout suggestions', 'Basic progress tracking', 'Home workout library'],
+    disabled: ['Advanced AI coaching', 'Diet planning', 'Advanced analytics'],
   },
   {
-    name: 'Pro',
-    price: '$9/mo',
-    subtitle: 'Best for regular users who want deeper personalization',
-    features: ['Advanced recommendations', 'Diet planning', 'Streak rewards and badges', 'Priority AI insights'],
+    tier: 'Pro Athlete',
+    price: '19',
+    per: 'Per month, billed monthly',
+    features: ['Unlimited workouts', 'Full AI coaching engine', 'Diet planning + macros', 'Advanced analytics', 'Rewards and streaks', 'Priority support'],
     highlighted: true,
   },
   {
-    name: 'Coach',
-    price: '$19/mo',
-    subtitle: 'Useful for communities, trainers, and power users',
-    features: ['Everything in Pro', 'Expanded analytics', 'Priority support', 'Team-ready guidance'],
+    tier: 'Elite',
+    price: '49',
+    per: 'Per month, billed monthly',
+    features: ['Everything in Pro', '1:1 coach access', 'Custom periodization', 'Team management', 'White-label option', 'Dedicated account manager'],
   },
 ];
 
-const faqItems = [
+const testimonials = [
   {
-    question: 'Can FitAI work for both gym and home workouts?',
-    answer:
-      'Yes. Users choose their workout location, and recommendations shift between gym equipment plans and no-equipment home routines.',
+    rating: 5,
+    quote:
+      'The AI coaching actually adapts. After a few weeks it knew where I was plateauing and changed my strength block intelligently.',
+    initials: 'RK',
+    name: 'Rahul K.',
+    role: 'Strength athlete',
   },
   {
-    question: 'How does the recommendation engine work?',
-    answer:
-      'The current engine is rule-based. It uses your goal, activity level, location, and recent workouts to build a practical plan.',
+    rating: 5,
+    quote:
+      'Finally a fitness app that does not separate training and diet. The nutrition sync with workout load is the real game changer.',
+    initials: 'SA',
+    name: 'Simran A.',
+    role: 'Competitive athlete',
   },
   {
-    question: 'Does the app also handle progress and rewards?',
-    answer:
-      'Yes. FitAI tracks workout consistency, weight progress, reward points, and streak badges in the same dashboard flow.',
+    rating: 5,
+    quote:
+      'Home workout mode is genuinely useful. Even while travelling, the routines and progression still feel serious and structured.',
+    initials: 'MV',
+    name: 'Mihail V.',
+    role: 'Business traveler',
+  },
+  {
+    rating: 4,
+    quote:
+      'The streak system is addictive in the best way. I open FitAI every morning because it keeps momentum visible.',
+    initials: 'PJ',
+    name: 'Priya J.',
+    role: 'Fitness enthusiast',
   },
 ];
 
-const trustHighlights = [
-  'Built for gym and home workouts',
-  'Secure login and profile flow',
-  'AI guidance, diet, progress, and rewards in one dashboard',
+const marqueeItems = [
+  'No Days Off',
+  'AI Personal Training',
+  'Smarter Nutrition',
+  'Real Results',
+  'Adaptive Coaching',
+  'Track Every Set',
+  'Build Consistency',
+  'Beat Yesterday',
+];
+
+const navItems = [
+  { href: '#features', label: 'Features' },
+  { href: '#session', label: 'Workflow' },
+  { href: '#pricing', label: 'Pricing' },
+  { href: '#reviews', label: 'Reviews' },
+  { href: '#footer', label: 'About' },
 ];
 
 function LandingPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const [contactForm, setContactForm] = useState({
-    name: '',
-    email: '',
-    company: '',
-    interest: 'demo',
-    message: '',
-  });
-  const [contactState, setContactState] = useState({
-    submitting: false,
-    error: '',
-    success: '',
-  });
+  const [scrolled, setScrolled] = useState(false);
+  const [cursor, setCursor] = useState({ x: 0, y: 0 });
+  const [ring, setRing] = useState({ x: 0, y: 0 });
+  const [timerSeconds, setTimerSeconds] = useState(42 * 60 + 17);
 
-  const handleContactChange = (event) => {
-    const { name, value } = event.target;
-    setContactForm((current) => ({ ...current, [name]: value }));
-  };
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 40);
+    const handleMove = (event) => {
+      setCursor({ x: event.clientX, y: event.clientY });
+    };
 
-  const handleContactSubmit = async (event) => {
-    event.preventDefault();
-    setContactState({ submitting: true, error: '', success: '' });
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('mousemove', handleMove);
 
-    try {
-      const response = await api.post('/contact', contactForm);
-      setContactState({
-        submitting: false,
-        error: '',
-        success: response.data.message,
-      });
-      setContactForm({
-        name: '',
-        email: '',
-        company: '',
-        interest: 'demo',
-        message: '',
-      });
-    } catch (error) {
-      setContactState({
-        submitting: false,
-        error: error.response?.data?.error || 'Unable to send your request right now.',
-        success: '',
-      });
-    }
-  };
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMove);
+    };
+  }, []);
+
+  useEffect(() => {
+    let frameId;
+
+    const animateRing = () => {
+      setRing((current) => ({
+        x: current.x + (cursor.x - current.x) * 0.12,
+        y: current.y + (cursor.y - current.y) * 0.12,
+      }));
+      frameId = window.requestAnimationFrame(animateRing);
+    };
+
+    frameId = window.requestAnimationFrame(animateRing);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [cursor]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setTimerSeconds((current) => current + 1);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const formattedTimer = useMemo(() => {
+    const mins = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+    const secs = String(timerSeconds % 60).padStart(2, '0');
+    return `${mins}:${secs}`;
+  }, [timerSeconds]);
 
   return (
-    <div className="fitai-shell fitai-grid min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-10 top-10 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
-        <div className="absolute bottom-10 right-10 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
-      </div>
+    <div className="fitai-ref-page">
+      <div className="fitai-ref-cursor" style={{ left: cursor.x, top: cursor.y }} />
+      <div className="fitai-ref-cursor-ring" style={{ left: ring.x, top: ring.y }} />
 
-      <nav className="relative z-10 px-6 py-6">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-500 shadow-lg">
-              <FaDumbbell className="text-xl text-white" />
-            </div>
-            <span className="bg-gradient-to-r from-fuchsia-300 to-cyan-300 bg-clip-text text-2xl font-bold text-transparent">
-              FitAI
-            </span>
-          </div>
+      <nav className={`fitai-ref-nav ${scrolled ? 'is-scrolled' : ''}`}>
+        <button type="button" onClick={() => navigate('/')} className="fitai-ref-logo">
+          <span className="fitai-ref-logo-mark">
+            <FaDumbbell />
+          </span>
+          <span className="fitai-ref-logo-word">FITAI</span>
+        </button>
 
-          <div className="hidden items-center gap-6 lg:flex">
-            <a href="#features" className="text-sm text-slate-300 transition hover:text-fuchsia-300">
-              Features
+        <div className="fitai-ref-nav-center">
+          {navItems.map((item) => (
+            <a key={item.label} href={item.href}>
+              {item.label}
             </a>
-            <a href="#workflow" className="text-sm text-slate-300 transition hover:text-fuchsia-300">
-              Workflow
-            </a>
-            <a href="#pricing" className="text-sm text-slate-300 transition hover:text-fuchsia-300">
-              Pricing
-            </a>
-            <a href="#faq" className="text-sm text-slate-300 transition hover:text-fuchsia-300">
-              FAQ
-            </a>
-            <a href="#contact" className="text-sm text-slate-300 transition hover:text-fuchsia-300">
-              Contact
-            </a>
-          </div>
+          ))}
+        </div>
 
-          <div className="flex gap-3">
-            {!isAuthenticated ? (
-              <>
-                <button
-                  onClick={() => navigate('/login')}
-                  className="rounded-full px-5 py-2 text-sm font-medium text-white transition hover:bg-white/5"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => navigate('/signup')}
-                  className="rounded-full bg-gradient-to-r from-fuchsia-600 to-cyan-600 px-5 py-2 text-sm font-semibold text-white shadow-lg"
-                >
-                  Create Account
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-600 to-cyan-600 px-5 py-2 text-sm font-semibold text-white shadow-lg"
-              >
-                Dashboard <FaArrowRight />
-              </button>
-            )}
-          </div>
+        <div className="fitai-ref-nav-right">
+          <button type="button" className="fitai-ref-nav-plain" onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}>
+            {isAuthenticated ? 'Dashboard' : 'Sign In'}
+          </button>
+          <button type="button" className="fitai-ref-nav-btn" onClick={() => navigate(isAuthenticated ? '/dashboard' : '/signup')}>
+            {isAuthenticated ? 'Open App' : 'Start Free'}
+          </button>
         </div>
       </nav>
 
-      <section className="relative z-10 px-6 pb-16 pt-8 md:pb-24 md:pt-14">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2">
-          <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-fuchsia-500/30 bg-fuchsia-500/15 px-4 py-2 text-sm text-fuchsia-300">
-              <FaRobot className="text-xs" />
-              AI-Powered Smart Trainer
-            </div>
+      <section className="fitai-ref-hero">
+        <div className="fitai-ref-hero-bg" />
+        <div className="fitai-ref-hero-stripe" />
+        <div className="fitai-ref-hero-overlay" />
 
-            <h1 className="max-w-4xl text-5xl font-bold leading-tight md:text-7xl">
-              <span className="bg-gradient-to-r from-fuchsia-300 via-cyan-300 to-fuchsia-300 bg-clip-text text-transparent">
-                Smart Virtual
+        <div className="fitai-ref-hero-content">
+          <div className="fitai-ref-eyebrow">
+            <span className="line" />
+            <span className="text">AI-Powered Training Platform</span>
+          </div>
+
+          <h1>
+            <span className="w1">Train</span>
+            <span className="w2">Harder.</span>
+            <span className="w3">Think</span>
+            <span className="w4">Smarter.</span>
+          </h1>
+
+          <p className="fitai-ref-hero-sub">
+            FitAI adapts to your body, tracks every rep, plans your nutrition, and keeps you accountable with streaks,
+            rewards, and real progress signals every single day.
+          </p>
+
+          <div className="fitai-ref-hero-actions">
+            <button type="button" className="fitai-ref-btn-primary" onClick={() => navigate(isAuthenticated ? '/dashboard' : '/signup')}>
+              Begin Training <FaArrowRight />
+            </button>
+            <button type="button" className="fitai-ref-btn-watch" onClick={() => navigate('/workout')}>
+              <span className="play-ring">
+                <FaPlay />
               </span>
-              <br />
-              <span className="text-white">Trainer for</span>
-              <br />
-              <span className="bg-gradient-to-r from-fuchsia-500 to-cyan-400 bg-clip-text text-transparent">
-                Everyone
-              </span>
-            </h1>
-
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 md:text-xl">
-              FitAI combines workout tracking, AI coaching, diet planning, progress insights, and reward-based
-              motivation in one immersive experience for gym users and home workout users.
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              {trustHighlights.map((item) => (
-                <span key={item} className="status-pill">
-                  <FaCheckCircle className="text-[0.7rem]" />
-                  {item}
-                </span>
-              ))}
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-4">
-              <button
-                onClick={() => navigate('/signup')}
-                className="cta-primary flex items-center gap-2 rounded-full px-8 py-4 text-base font-bold text-white"
-              >
-                Start Free Trial <FaRocket />
-              </button>
-              <button
-                onClick={() => navigate('/login')}
-                className="glass-morphism flex items-center gap-2 rounded-full px-8 py-4 text-base font-semibold text-white"
-              >
-                <FaPlay /> Login to Continue
-              </button>
-            </div>
-
-            <div className="mt-12 grid max-w-2xl grid-cols-3 gap-5 border-t border-white/10 pt-8">
-              <div>
-                <p className="text-3xl font-bold text-fuchsia-300 md:text-4xl">15k+</p>
-                <p className="mt-2 text-sm text-slate-400">Active users</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-cyan-300 md:text-4xl">500k+</p>
-                <p className="mt-2 text-sm text-slate-400">Workouts completed</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-emerald-300 md:text-4xl">98%</p>
-                <p className="mt-2 text-sm text-slate-400">Satisfaction rate</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="glass-card hero-gradient hero-3d rounded-[2rem] p-8">
-              <div className="mb-6 flex items-center justify-between">
-                <div className="flex gap-2">
-                  <span className="h-3 w-3 rounded-full bg-fuchsia-400" />
-                  <span className="h-3 w-3 rounded-full bg-cyan-400" />
-                  <span className="h-3 w-3 rounded-full bg-emerald-400" />
-                </div>
-                <FaBrain className="text-xl text-fuchsia-300" />
-              </div>
-
-              <div className="space-y-4">
-                <div className="floating-panel rounded-2xl p-4">
-                  <p className="text-sm text-slate-400">Current streak</p>
-                  <p className="mt-1 text-2xl font-bold text-white">7 days</p>
-                </div>
-                <div className="floating-panel floating-delay-2 rounded-2xl p-4">
-                  <p className="text-sm text-slate-400">Calories burned</p>
-                  <p className="mt-1 text-2xl font-bold text-white">2,450</p>
-                </div>
-                <div className="floating-panel floating-delay-3 rounded-2xl p-4">
-                  <p className="text-sm text-slate-400">Next workout</p>
-                  <p className="mt-1 text-2xl font-bold text-emerald-300">Full Body</p>
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-fuchsia-500/20 bg-fuchsia-500/10 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-fuchsia-300">AI Coach Says</p>
-                <p className="mt-2 text-slate-100">Great progress. Ready for your next challenge?</p>
-              </div>
-            </div>
-
-            <div className="absolute -left-4 -top-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-fuchsia-600 to-cyan-600 shadow-2xl">
-              <GiWeightLiftingUp className="text-3xl text-white" />
-            </div>
-            <div className="absolute -bottom-5 -right-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-500 to-emerald-500 shadow-2xl">
-              <FaHeartbeat className="text-3xl text-white" />
-            </div>
+              Watch Demo
+            </button>
           </div>
         </div>
-      </section>
 
-      <section id="features" className="relative z-10 bg-black/30 px-6 py-20">
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto mb-16 max-w-3xl text-center">
-            <p className="section-title text-sm text-fuchsia-300">Why FitAI</p>
-            <h2 className="mt-4 text-4xl font-bold text-white md:text-5xl">Transform your fitness journey</h2>
-            <p className="mt-4 text-lg leading-8 text-slate-300">
-              Instead of separating logging, planning, and motivation, FitAI connects them into one loop so every
-              session improves the next one.
-            </p>
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {featureCards.map((card) => {
-              const Icon = card.icon;
-              return (
-                <div key={card.title} className="feature-panel glass-morphism rounded-3xl p-8">
-                  <div
-                    className={`mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r ${card.accent}`}
-                  >
-                    <Icon className="text-3xl text-white" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white">{card.title}</h3>
-                  <p className="mt-3 leading-7 text-slate-300">{card.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="relative z-10 px-6 pb-6">
-        <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-3">
-          <div className="metric-glow glass-morphism rounded-3xl p-6">
-            <p className="text-sm uppercase tracking-[0.2em] text-fuchsia-300">Workout Flow</p>
-            <p className="mt-3 text-2xl font-bold text-white">Track sets, reps, and duration in one session view.</p>
-          </div>
-          <div className="metric-glow glass-morphism rounded-3xl p-6">
-            <p className="text-sm uppercase tracking-[0.2em] text-cyan-300">AI Layer</p>
-            <p className="mt-3 text-2xl font-bold text-white">Rule-based coaching that is ready for future LLM upgrades.</p>
-          </div>
-          <div className="metric-glow glass-morphism rounded-3xl p-6">
-            <p className="text-sm uppercase tracking-[0.2em] text-emerald-300">Motivation</p>
-            <p className="mt-3 text-2xl font-bold text-white">Progress charts, badges, points, and streak rewards built in.</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="workflow" className="relative z-10 px-6 py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-14 text-center">
-            <p className="section-title text-sm text-fuchsia-300">Workflow</p>
-            <h2 className="mt-4 text-4xl font-bold text-white md:text-5xl">Train smarter, not harder</h2>
-            <p className="mt-4 text-lg text-slate-300">The whole product follows one clean fitness loop.</p>
-          </div>
-
-          <div className="space-y-6">
-            {workflowSteps.map(([title, description, Icon], index) => (
-              <div key={title} className="glass-morphism flex flex-col gap-5 rounded-3xl p-6 md:flex-row md:items-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-600 to-cyan-600 text-xl font-bold text-white shadow-lg">
-                  {index + 1}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <Icon className="text-lg text-fuchsia-300" />
-                    <h3 className="text-xl font-semibold text-white">{title}</h3>
-                  </div>
-                  <p className="mt-2 text-slate-300">{description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="relative z-10 bg-gradient-to-r from-fuchsia-950/50 to-cyan-950/50 px-6 py-20">
-        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-4">
+        <div className="fitai-ref-hero-bar">
           {[
-            [FaFire, '15k+', 'Active Users'],
-            [FaDumbbell, '500k+', 'Workouts Completed'],
-            [FaStar, '4.9/5', 'User Rating'],
-            [FaChartLine, '98%', 'Success Rate'],
-          ].map(([Icon, value, label]) => (
-            <div key={label} className="glass-morphism rounded-3xl p-6 text-center">
-              <Icon className="mx-auto text-4xl text-fuchsia-300" />
-              <p className="mt-4 text-4xl font-bold text-white">{value}</p>
-              <p className="mt-2 text-slate-300">{label}</p>
+            ['15K+', 'Active Athletes'],
+            ['500K+', 'Sessions Logged'],
+            ['98%', 'Goal Achievement'],
+            ['4.9★', 'User Rating'],
+          ].map(([value, label]) => (
+            <div key={label} className="hb-item">
+              <span className="hb-line" />
+              <div>
+                <div className="hb-num">{value}</div>
+                <div className="hb-label">{label}</div>
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="relative z-10 px-6 py-20">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-14 text-center">
-            <p className="section-title text-sm text-fuchsia-300">Testimonials</p>
-            <h2 className="mt-4 text-4xl font-bold text-white md:text-5xl">What our users say</h2>
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-3">
-            {[
-              ['Sarah Johnson', 'Fitness Enthusiast', 'FitAI completely transformed my workout routine. The AI suggestions keep me challenged.', 'SJ'],
-              ['Mike Chen', 'Busy Professional', 'The home workouts are practical and finally fit my schedule.', 'MC'],
-              ['Emma Davis', 'Beginner', 'The guidance and workout structure gave me confidence to start.', 'ED'],
-            ].map(([name, role, quote, avatar]) => (
-              <div key={name} className="glass-morphism rounded-3xl p-6">
-                <FaQuoteLeft className="text-3xl text-fuchsia-400/60" />
-                <p className="mt-4 text-slate-300">"{quote}"</p>
-                <div className="mt-6 flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-600 to-cyan-600 font-bold text-white">
-                    {avatar}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white">{name}</p>
-                    <p className="text-sm text-slate-400">{role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="fitai-ref-marquee">
+        <div className="fitai-ref-marquee-track">
+          {[...marqueeItems, ...marqueeItems].map((item, index) => (
+            <span key={`${item}-${index}`} className="mq-item">
+              {item}
+            </span>
+          ))}
         </div>
-      </section>
+      </div>
 
-      <section id="pricing" className="relative z-10 bg-black/30 px-6 py-20">
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto mb-16 max-w-3xl text-center">
-            <p className="section-title text-sm text-fuchsia-300">Pricing</p>
-            <h2 className="mt-4 text-4xl font-bold text-white md:text-5xl">Simple plans for every stage</h2>
-            <p className="mt-4 text-lg leading-8 text-slate-300">
-              Start free, unlock deeper personalization when you need it, and scale into a more premium coaching flow.
-            </p>
-          </div>
-
-          <div className="grid gap-8 lg:grid-cols-3">
-            {pricingPlans.map((plan) => (
-              <div
-                key={plan.name}
-                className={`glass-morphism rounded-3xl p-8 ${plan.highlighted ? 'border-fuchsia-400/40 bg-fuchsia-500/10' : ''}`}
-              >
-                {plan.highlighted ? (
-                  <div className="mb-4 inline-flex rounded-full bg-gradient-to-r from-fuchsia-600 to-cyan-600 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white">
-                    Most Popular
-                  </div>
-                ) : null}
-                <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
-                <p className="mt-2 text-slate-400">{plan.subtitle}</p>
-                <p className="mt-6 text-5xl font-bold text-white">{plan.price}</p>
-                <div className="mt-8 space-y-3">
-                  {plan.features.map((feature) => (
-                    <div key={feature} className="flex items-start gap-3">
-                      <FaCheckCircle className="mt-1 text-sm text-emerald-300" />
-                      <p className="text-slate-300">{feature}</p>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={() => navigate('/signup')}
-                  className={`mt-8 w-full rounded-full px-5 py-3 font-semibold ${
-                    plan.highlighted
-                      ? 'bg-gradient-to-r from-fuchsia-600 to-cyan-600 text-white'
-                      : 'glass-morphism text-slate-100'
-                  }`}
-                >
-                  Get Started
-                </button>
-              </div>
-            ))}
-          </div>
+      <section className="fitai-ref-split">
+        <div className="split-img">
+          <img
+            src="https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=900&q=80"
+            alt="Athlete training"
+            loading="lazy"
+          />
+          <div className="split-img-ov" />
         </div>
-      </section>
 
-      <section id="faq" className="relative z-10 px-6 py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-14 text-center">
-            <p className="section-title text-sm text-fuchsia-300">FAQ</p>
-            <h2 className="mt-4 text-4xl font-bold text-white md:text-5xl">Answers before you start</h2>
+        <div className="split-body">
+          <div className="sec-label">
+            <span className="sec-line" />
+            <span className="sec-tag">Why FitAI</span>
           </div>
-
-          <div className="space-y-5">
-            {faqItems.map((item) => (
-              <div key={item.question} className="feature-panel glass-morphism rounded-3xl p-6">
-                <h3 className="text-xl font-semibold text-white">{item.question}</h3>
-                <p className="mt-3 text-slate-300">{item.answer}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="contact" className="relative z-10 bg-black/30 px-6 py-20">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-2">
-          <div className="glass-morphism rounded-3xl p-8">
-            <p className="section-title text-sm text-fuchsia-300">Contact</p>
-            <h2 className="mt-4 text-4xl font-bold text-white">Talk to the FitAI team</h2>
-            <p className="mt-4 text-slate-300">
-              Whether you want product access, a premium plan, or help setting up your workflow, we can guide you.
-            </p>
-
-            <div className="mt-8 space-y-4">
-              {[
-                [FaEnvelope, 'Email', 'hello@fitai.app'],
-                [FaPhoneAlt, 'Phone', '+91 98765 43210'],
-                [FaMapMarkerAlt, 'Location', 'Remote-first, India'],
-              ].map(([Icon, label, value]) => (
-                <div key={label} className="glass-morphism flex items-center gap-4 rounded-2xl px-4 py-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-fuchsia-600 to-cyan-600">
-                    <Icon className="text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-400">{label}</p>
-                    <p className="font-medium text-white">{value}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="glass-morphism rounded-3xl p-8">
-            <h3 className="text-2xl font-semibold text-white">Best demo flow</h3>
-            <p className="mt-3 text-slate-300">
-              Landing page to Signup to Onboarding to Dashboard to Workout to Progress to Diet.
-            </p>
-
-            <form onSubmit={handleContactSubmit} className="mt-8 space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-sm text-slate-300">Name</span>
-                  <input
-                    name="name"
-                    value={contactForm.name}
-                    onChange={handleContactChange}
-                    placeholder="Your name"
-                    className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
-                  />
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-sm text-slate-300">Email</span>
-                  <input
-                    name="email"
-                    type="email"
-                    value={contactForm.email}
-                    onChange={handleContactChange}
-                    placeholder="name@example.com"
-                    className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
-                  />
-                </label>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-sm text-slate-300">Company or team</span>
-                  <input
-                    name="company"
-                    value={contactForm.company}
-                    onChange={handleContactChange}
-                    placeholder="Optional"
-                    className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
-                  />
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-sm text-slate-300">Interest</span>
-                  <select
-                    name="interest"
-                    value={contactForm.interest}
-                    onChange={handleContactChange}
-                    className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
-                  >
-                    <option value="demo">Book a demo</option>
-                    <option value="premium">Premium plan</option>
-                    <option value="partnership">Partnership</option>
-                    <option value="support">Product question</option>
-                  </select>
-                </label>
-              </div>
-
-              <label className="block">
-                <span className="mb-2 block text-sm text-slate-300">Message</span>
-                <textarea
-                  name="message"
-                  value={contactForm.message}
-                  onChange={handleContactChange}
-                  rows="4"
-                  placeholder="Tell us what you want to explore with FitAI"
-                  className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
-                />
-              </label>
-
-              {contactState.error ? (
-                <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-                  {contactState.error}
-                </div>
-              ) : null}
-
-              {contactState.success ? (
-                <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
-                  {contactState.success}
-                </div>
-              ) : null}
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <button
-                  type="submit"
-                  disabled={contactState.submitting}
-                  className="rounded-2xl bg-gradient-to-r from-fuchsia-600 to-cyan-600 px-6 py-4 font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {contactState.submitting ? 'Sending request...' : 'Send Request'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/login')}
-                  className="glass-morphism rounded-2xl px-6 py-4 font-semibold text-slate-100"
-                >
-                  Login
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative z-10 px-6 py-20">
-        <div className="glass-card mx-auto max-w-5xl rounded-[2rem] p-12 text-center">
-          <h2 className="text-3xl font-bold text-white md:text-4xl">Ready to transform your fitness?</h2>
-          <p className="mt-4 text-lg text-slate-300">
-            Join FitAI and move through the complete workout, progress, diet, and rewards cycle.
+          <h2>
+            Your Body.
+            <br />
+            Your Data.
+            <br />
+            Your Coach.
+          </h2>
+          <p className="body-p">
+            FitAI connects workout tracking, AI guidance, diet planning, progress analytics, and long-term motivation
+            into one serious system for gym athletes and home users.
           </p>
-          <button
-            onClick={() => navigate('/signup')}
-            className="cta-primary mx-auto mt-8 flex items-center gap-2 rounded-full px-8 py-4 text-lg font-bold text-white"
-          >
-            Start Your Journey <FaArrowRight />
+
+          <ul className="split-list">
+            {splitList.map((item) => (
+              <li key={item}>
+                <span className="chk">
+                  <FaCheck />
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+
+          <button type="button" className="fitai-ref-btn-primary fitai-ref-inline-btn" onClick={() => navigate('/dashboard')}>
+            Explore Features <FaArrowRight />
           </button>
         </div>
       </section>
 
-      <footer className="relative z-10 border-t border-white/10 px-6 py-12">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8 grid gap-8 md:grid-cols-4">
-            <div>
-              <div className="mb-4 flex items-center gap-2">
-                <FaDumbbell className="text-xl text-fuchsia-400" />
-                <span className="text-xl font-bold text-white">FitAI</span>
-              </div>
-              <p className="text-sm text-slate-400">Smart Virtual Trainer powered by AI</p>
+      <section className="fitai-ref-features" id="features">
+        <div className="sec-hdr">
+          <div>
+            <div className="sec-label">
+              <span className="sec-line" />
+              <span className="sec-tag">Platform Features</span>
             </div>
-            <div>
-              <h4 className="mb-3 font-semibold text-white">Product</h4>
-              <div className="space-y-2 text-sm text-slate-400">
-                <a href="#features" className="block transition hover:text-fuchsia-400">
-                  Features
-                </a>
-                <a href="#workflow" className="block transition hover:text-fuchsia-400">
-                  Workflow
-                </a>
-                <a href="#pricing" className="block transition hover:text-fuchsia-400">
-                  Pricing
-                </a>
+            <h2>
+              Everything You Need
+              <br />
+              To Perform.
+            </h2>
+          </div>
+          <div className="hdr-note">
+            Workout coaching, nutrition, progress, rewards, home mode, and adaptable planning built into one seamless
+            product flow.
+          </div>
+        </div>
+
+        <div className="feat-grid">
+          {featureCards.map((feature) => (
+            <div key={feature.title} className="feat-cell">
+              <div className="feat-n">{feature.number}</div>
+              <div className="feat-ico">{feature.icon}</div>
+              <div className="feat-nm">{feature.title}</div>
+              <p className="feat-d">{feature.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="fitai-ref-strip">
+        <div className="strip-bg" />
+        <div className="strip-ov" />
+        <div className="strip-txt">
+          <h2>
+            Forged In
+            <br />
+            <em>Every Rep.</em>
+          </h2>
+          <p className="strip-sub">Results do not happen in theory. They happen through consistency and clean execution.</p>
+        </div>
+      </section>
+
+      <section className="fitai-ref-session" id="session">
+        <div className="session-img">
+          <img
+            src="https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=900&q=80"
+            alt="Live gym session"
+            loading="lazy"
+          />
+          <div className="session-img-ov" />
+        </div>
+
+        <div className="session-body">
+          <div className="sec-label">
+            <span className="sec-line" />
+            <span className="sec-tag">In Session</span>
+          </div>
+          <h2>
+            Every Rep,
+            <br />
+            Every Set,
+            <br />
+            Tracked.
+          </h2>
+          <p className="body-p">
+            Live workout flow gives you timers, next exercise suggestions, YouTube guidance, and session tracking in one
+            focused view.
+          </p>
+
+          <div className="live-card">
+            <div className="live-hdr">
+              <div className="live-pill">
+                <span className="pdot" />
+                Live Session
+              </div>
+              <div className="timer">{formattedTimer}</div>
+            </div>
+
+            <div className="ex-list">
+              <div className="ex-row done">
+                <span className="ex-nm">Bench Press</span>
+                <span className="ex-inf">4×6 · 100kg</span>
+                <span className="ex-st st-done">Done</span>
+              </div>
+              <div className="ex-row done">
+                <span className="ex-nm">Incline DB Press</span>
+                <span className="ex-inf">3×8 · 32kg</span>
+                <span className="ex-st st-done">Done</span>
+              </div>
+              <div className="ex-row active">
+                <span className="ex-nm">Cable Flyes</span>
+                <span className="ex-inf">Set 2/3 · 18kg</span>
+                <span className="ex-st st-act">Active</span>
+              </div>
+              <div className="ex-row">
+                <span className="ex-nm">Overhead Press</span>
+                <span className="ex-inf">4×5 · 60kg</span>
+                <span className="ex-st st-next">Next</span>
+              </div>
+              <div className="ex-row">
+                <span className="ex-nm">Tricep Pushdown</span>
+                <span className="ex-inf">3×12</span>
+                <span className="ex-st st-next">Next</span>
               </div>
             </div>
-            <div>
-              <h4 className="mb-3 font-semibold text-white">Company</h4>
-              <div className="space-y-2 text-sm text-slate-400">
-                <a href="#faq" className="block transition hover:text-fuchsia-400">
-                  FAQ
-                </a>
-                <a href="#contact" className="block transition hover:text-fuchsia-400">
-                  Contact
-                </a>
+
+            <div className="prog-sec">
+              <div className="prog-lbl">
+                <span>Progress</span>
+                <span className="prog-pct">68%</span>
+              </div>
+              <div className="prog-bar">
+                <div className="prog-fill" />
               </div>
             </div>
-            <div>
-              <h4 className="mb-3 font-semibold text-white">Social</h4>
-              <div className="flex gap-4 text-lg text-slate-400">
-                <a href="/" className="transition hover:text-fuchsia-400">
-                  <FaTwitter />
-                </a>
-                <a href="/" className="transition hover:text-fuchsia-400">
-                  <FaInstagram />
-                </a>
-                <a href="/" className="transition hover:text-fuchsia-400">
-                  <FaGithub />
-                </a>
-                <a href="/" className="transition hover:text-fuchsia-400">
-                  <FaLinkedin />
-                </a>
-              </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="fitai-ref-pricing" id="pricing">
+        <div className="pricing-shell">
+          <div className="pricing-head">
+            <div className="sec-label">
+              <span className="sec-line" />
+              <span className="sec-tag">Pricing</span>
             </div>
+            <h2>
+              Simple. Transparent.
+              <br />
+              No Surprises.
+            </h2>
           </div>
 
-          <div className="border-t border-white/10 pt-8 text-sm text-slate-400">
-            Copyright 2024 FitAI. All rights reserved.
+          <div className="pricing-grid">
+            {pricingPlans.map((plan) => (
+              <div key={plan.tier} className={`pc ${plan.highlighted ? 'hot' : ''}`}>
+                {plan.highlighted ? <div className="hot-tag">Most Popular</div> : null}
+                <div className="plan-tier">{plan.tier}</div>
+                <div className="plan-price">
+                  <span className="cur">$</span>
+                  {plan.price}
+                </div>
+                <div className="plan-per">{plan.per}</div>
+                <div className="plan-div" />
+                <ul className="plan-ul">
+                  {plan.features.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                  {plan.disabled?.map((item) => (
+                    <li key={item} className="off">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  className={`plan-btn ${plan.highlighted ? 'hot-btn' : ''}`}
+                  onClick={() => navigate(plan.highlighted ? '/signup' : '/login')}
+                >
+                  {plan.highlighted ? 'Start 7-Day Trial' : 'Get Started'}
+                </button>
+              </div>
+            ))}
           </div>
+        </div>
+      </section>
+
+      <section className="fitai-ref-testimonials" id="reviews">
+        <div className="testi-left">
+          <div className="sec-label">
+            <span className="sec-line" />
+            <span className="sec-tag">Reviews</span>
+          </div>
+          <h2>
+            What Athletes
+            <br />
+            Are Saying.
+          </h2>
+          <p>Real results from people using FitAI for gym training, home workouts, progress tracking, and daily discipline.</p>
+        </div>
+
+        <div className="testi-grid">
+          {testimonials.map((item) => (
+            <div key={item.name} className="tc">
+              <div className="tc-stars">
+                {Array.from({ length: item.rating }).map((_, index) => (
+                  <FaStar key={index} />
+                ))}
+              </div>
+              <p className="tc-q">"{item.quote}"</p>
+              <div className="tc-auth">
+                <div className="tc-av">{item.initials}</div>
+                <div>
+                  <div className="tc-name">{item.name}</div>
+                  <div className="tc-role">{item.role}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <footer id="footer" className="fitai-ref-footer">
+        <div className="ft-top">
+          <div>
+            <button type="button" onClick={() => navigate('/')} className="fitai-ref-logo fitai-ref-footer-logo">
+              <span className="fitai-ref-logo-mark">
+                <FaDumbbell />
+              </span>
+              <span className="fitai-ref-logo-word">FITAI</span>
+            </button>
+            <p className="ft-desc">
+              The intelligent training platform for gym athletes and home workout users. Track, adapt, perform, and stay
+              consistent.
+            </p>
+          </div>
+          <div className="ft-col">
+            <h4>Product</h4>
+            <ul>
+              <li><a href="#features">Features</a></li>
+              <li><a href="#pricing">Pricing</a></li>
+              <li><a href="/dashboard">Dashboard</a></li>
+              <li><a href="/workout">Workout</a></li>
+            </ul>
+          </div>
+          <div className="ft-col">
+            <h4>Resources</h4>
+            <ul>
+              <li><a href="/progress">Progress</a></li>
+              <li><a href="/diet">Diet</a></li>
+              <li><a href="/notifications">Reminders</a></li>
+              <li><a href="/settings">Settings</a></li>
+            </ul>
+          </div>
+          <div className="ft-col">
+            <h4>Company</h4>
+            <ul>
+              <li><a href="#footer">About</a></li>
+              <li><a href="/login">Sign In</a></li>
+              <li><a href="/signup">Start Free</a></li>
+              <li><a href="#reviews">Reviews</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="ft-btm">
+          <span>© 2026 FitAI Technologies. All rights reserved.</span>
+          <span>Designed for athletes. Built for consistency.</span>
         </div>
       </footer>
     </div>

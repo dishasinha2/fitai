@@ -102,6 +102,87 @@ const syncRewardsForStreak = async (userId, streak) => {
   return awarded;
 };
 
+const getExerciseCatalogMap = () => {
+  const rows = db.prepare('SELECT name, muscle_group FROM exercises').all();
+  return new Map(rows.map((row) => [row.name, row.muscle_group]));
+};
+
+const detectPersonalRecords = (workouts = []) => {
+  const bestByExercise = new Map();
+
+  workouts
+    .slice()
+    .sort((left, right) => new Date(left.date) - new Date(right.date))
+    .forEach((workout) => {
+      (workout.exercises || []).forEach((exercise) => {
+        const score =
+          Number(exercise.weight || 0) * Number(exercise.reps || 0) * Math.max(1, Number(exercise.sets || 1)) ||
+          Number(exercise.reps || 0) * Math.max(1, Number(exercise.sets || 1)) ||
+          Number(exercise.duration || 0);
+
+        if (!bestByExercise.has(exercise.name) || score > bestByExercise.get(exercise.name).score) {
+          bestByExercise.set(exercise.name, {
+            name: exercise.name,
+            score,
+            weight: Number(exercise.weight || 0),
+            reps: Number(exercise.reps || 0),
+            sets: Number(exercise.sets || 0),
+            duration: Number(exercise.duration || 0),
+            date: workout.date,
+          });
+        }
+      });
+    });
+
+  return Array.from(bestByExercise.values())
+    .filter((item) => item.score > 0)
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 5);
+};
+
+const buildMuscleGroupFocus = (workouts = []) => {
+  const catalogMap = getExerciseCatalogMap();
+  const trend = {};
+
+  workouts.slice(-10).forEach((workout) => {
+    (workout.exercises || []).forEach((exercise) => {
+      const muscleGroup = exercise.muscleGroup || catalogMap.get(exercise.name) || 'full_body';
+      trend[muscleGroup] = (trend[muscleGroup] || 0) + 1;
+    });
+  });
+
+  return Object.entries(trend)
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 5)
+    .map(([muscleGroup, count]) => ({ muscleGroup, count }));
+};
+
+const buildProgressReport = ({ user, summary, workouts = [], progressLogs = [], rewards = [] }) => {
+  const latestWorkout = workouts.at(-1);
+  const personalRecords = detectPersonalRecords(workouts);
+  const muscleGroupFocus = buildMuscleGroupFocus(workouts);
+
+  return {
+    generatedAt: new Date().toISOString(),
+    user: {
+      name: user.name,
+      goal: user.fitnessGoal,
+      activityLevel: user.activityLevel,
+      location: user.location,
+    },
+    summary,
+    totals: {
+      workouts: workouts.length,
+      progressLogs: progressLogs.length,
+      rewardPoints: rewards.reduce((sum, reward) => sum + Number(reward.points || 0), 0),
+      latestWorkoutDate: latestWorkout?.date || null,
+    },
+    personalRecords,
+    muscleGroupFocus,
+    shareText: `${user.name} has completed ${summary.totalWorkouts || 0} workouts with a ${summary.consistencyScore || 0}% consistency score and ${summary.rewardPoints || 0} reward points on FitAI.`,
+  };
+};
+
 const buildProgressSummary = ({ user, workouts = [], progressLogs = [], rewards = [] }) => {
   const sortedLogs = [...progressLogs].sort((a, b) => new Date(a.date) - new Date(b.date));
   const latestWeight = sortedLogs.at(-1)?.weight ?? user.weight ?? 0;
@@ -110,6 +191,15 @@ const buildProgressSummary = ({ user, workouts = [], progressLogs = [], rewards 
   const totalWorkouts = workouts.length;
   const totalVolume = workouts.reduce((sum, workout) => sum + Number(workout.totalSets || 0) * Number(workout.totalReps || 0), 0);
   const consistencyScore = Math.min(100, Math.round((calculateStreak(workouts) / 7) * 100));
+  const totalCalories = workouts.reduce((sum, workout) => sum + Number(workout.estimatedCalories || 0), 0);
+  const averageWorkoutDuration = totalWorkouts
+    ? Math.round(workouts.reduce((sum, workout) => sum + Number(workout.totalDuration || 0), 0) / totalWorkouts)
+    : 0;
+  const bestWorkoutDuration = workouts.reduce(
+    (best, workout) => Math.max(best, Number(workout.totalDuration || 0)),
+    0,
+  );
+  const activeDays = new Set(workouts.map((workout) => workout.dayKey || getDayKey(new Date(workout.date)))).size;
 
   return {
     latestWeight,
@@ -117,6 +207,12 @@ const buildProgressSummary = ({ user, workouts = [], progressLogs = [], rewards 
     totalWorkouts,
     totalVolume,
     consistencyScore,
+    totalCalories,
+    averageWorkoutDuration,
+    bestWorkoutDuration,
+    activeDays,
+    personalRecords: detectPersonalRecords(workouts),
+    muscleGroupFocus: buildMuscleGroupFocus(workouts),
     rewardPoints: rewards.reduce((sum, reward) => sum + Number(reward.points || 0), 0),
   };
 };
@@ -126,5 +222,8 @@ module.exports = {
   calculateWorkoutTotals,
   calculateStreak,
   syncRewardsForStreak,
+  detectPersonalRecords,
+  buildMuscleGroupFocus,
   buildProgressSummary,
+  buildProgressReport,
 };

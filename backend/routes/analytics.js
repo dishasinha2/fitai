@@ -1,5 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
+const adminMiddleware = require('../middleware/admin');
 const {
   db,
   mapContactSubmissionRow,
@@ -11,7 +12,7 @@ const {
 
 const router = express.Router();
 
-router.get('/overview', authMiddleware, (req, res) => {
+router.get('/overview', authMiddleware, adminMiddleware, (req, res) => {
   try {
     const users = db.prepare('SELECT * FROM users ORDER BY created_at DESC').all().map(mapUserRow);
     const workouts = db.prepare('SELECT * FROM workouts ORDER BY date DESC').all().map(mapWorkoutRow);
@@ -21,6 +22,9 @@ router.get('/overview', authMiddleware, (req, res) => {
       .prepare('SELECT * FROM contact_submissions ORDER BY created_at DESC')
       .all()
       .map(mapContactSubmissionRow);
+    const reminders = db.prepare('SELECT COUNT(*) AS count FROM reminders').get().count;
+    const unreadNotifications = db.prepare('SELECT COUNT(*) AS count FROM notifications WHERE is_read = 0').get().count;
+    const dietPlans = db.prepare('SELECT COUNT(*) AS count FROM diet_plans').get().count;
 
     const last7Days = Array.from({ length: 7 }, (_, index) => {
       const current = new Date();
@@ -60,6 +64,9 @@ router.get('/overview', authMiddleware, (req, res) => {
           ? Math.round(workouts.reduce((sum, workout) => sum + Number(workout.totalDuration || 0), 0) / workouts.length)
           : 0,
         latestProgressEntries: progressLogs.length,
+        totalDietPlans: dietPlans,
+        activeReminders: reminders,
+        unreadNotifications,
       },
       workoutsByDay,
       signupsByGoal,

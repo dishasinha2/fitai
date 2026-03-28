@@ -6,14 +6,20 @@ const navItems = [
   { to: '/workout', label: 'Workout' },
   { to: '/progress', label: 'Progress' },
   { to: '/diet', label: 'Diet' },
-  { to: '/requests', label: 'Requests' },
-  { to: '/analytics', label: 'Analytics' },
+  { to: '/notifications', label: 'Reminders' },
   { to: '/settings', label: 'Settings' },
 ];
 
-function Layout({ title, subtitle, children }) {
+const adminNavItems = [
+  { to: '/admin', label: 'Admin' },
+  { to: '/requests', label: 'Requests' },
+  { to: '/analytics', label: 'Analytics' },
+];
+
+function Layout({ title, subtitle, heroImage, heroLabel, children }) {
   const navigate = useNavigate();
   const user = getStoredUser();
+  const visibleNavItems = user?.role === 'admin' ? [...navItems, ...adminNavItems] : navItems;
 
   const handleLogout = () => {
     clearSession();
@@ -21,29 +27,29 @@ function Layout({ title, subtitle, children }) {
   };
 
   return (
-    <div className="fitai-shell fitai-grid">
-      <div className="mx-auto min-h-screen max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <header className="glass-card glass-morphism mb-6 rounded-3xl px-5 py-5 sm:px-6">
+    <div className="fitai-ref-app-shell fitai-ref-app-grid">
+      <div className="min-h-screen">
+        <header className="fitai-ref-app-header fitai-ref-app-header-shell px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <Link to="/dashboard" className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-300">
+              <Link to="/dashboard" className="fitai-ref-kicker">
                 FitAI
               </Link>
-              <h1 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">{title}</h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-300 sm:text-base">{subtitle}</p>
+              <h1 className="fitai-ref-app-title mt-3">{title}</h1>
+              <p className="fitai-ref-copy mt-2 max-w-2xl text-sm sm:text-base">{subtitle}</p>
             </div>
 
             <div className="flex flex-col gap-4 lg:items-end">
               <div className="flex flex-wrap gap-2">
-                {navItems.map((item) => (
+                {visibleNavItems.map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}
                     className={({ isActive }) =>
-                      `rounded-full px-4 py-2 text-sm transition ${
+                      `px-4 py-2 text-sm ${
                         isActive
-                          ? 'bg-emerald-400 text-slate-950'
-                          : 'bg-slate-800/80 text-slate-200 hover:bg-slate-700'
+                          ? 'fitai-ref-action text-white'
+                          : 'fitai-ref-action-secondary text-slate-200'
                       }`
                     }
                   >
@@ -53,14 +59,17 @@ function Layout({ title, subtitle, children }) {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl border border-slate-700 bg-slate-900/70 px-4 py-2 text-right">
+                <div className="fitai-ref-profile-box text-right">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Active Profile</p>
-                  <p className="text-sm font-medium text-white">{user?.name || 'FitAI User'}</p>
+                  <p className="text-sm font-medium text-white">
+                    {user?.name || 'FitAI User'}
+                    {user?.role === 'admin' ? ' | Admin' : ''}
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="rounded-full border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:border-emerald-400 hover:text-white"
+                  className="fitai-ref-action-secondary px-4 py-2 text-sm"
                 >
                   Logout
                 </button>
@@ -69,7 +78,24 @@ function Layout({ title, subtitle, children }) {
           </div>
         </header>
 
-        {children}
+        <section
+          className="fitai-ref-page-hero"
+          style={
+            heroImage
+              ? {
+                  backgroundImage: `linear-gradient(to bottom, rgba(11,12,14,0.34), rgba(11,12,14,0.82)), url('${heroImage}')`,
+                }
+              : undefined
+          }
+        >
+          <div className="fitai-ref-page-hero-inner px-4 sm:px-6 lg:px-8">
+            {heroLabel ? <p className="fitai-ref-kicker">{heroLabel}</p> : null}
+            <h2 className="fitai-ref-page-hero-title mt-4">{title}</h2>
+            <p className="fitai-ref-copy mt-4 max-w-3xl text-base sm:text-lg">{subtitle}</p>
+          </div>
+        </section>
+
+        <main className="fitai-ref-page-content px-4 py-8 sm:px-6 lg:px-8">{children}</main>
       </div>
     </div>
   );

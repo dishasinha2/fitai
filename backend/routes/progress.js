@@ -1,7 +1,8 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
-const { buildProgressSummary } = require('../services/analytics');
+const { buildProgressReport, buildProgressSummary } = require('../services/analytics');
 const {
+  createNotification,
   db,
   getUserById,
   mapProgressRow,
@@ -34,6 +35,37 @@ router.get('/', authMiddleware, async (req, res) => {
       summary: buildProgressSummary({ user, workouts, progressLogs, rewards }),
       workouts,
     });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.get('/report', authMiddleware, async (req, res) => {
+  try {
+    const user = getUserById(req.user.id);
+    const progressLogs = db
+      .prepare('SELECT * FROM progress_logs WHERE user_id = ? ORDER BY date ASC')
+      .all(Number(req.user.id))
+      .map(mapProgressRow);
+    const workouts = db
+      .prepare('SELECT * FROM workouts WHERE user_id = ? ORDER BY date ASC')
+      .all(Number(req.user.id))
+      .map(mapWorkoutRow);
+    const rewards = db
+      .prepare('SELECT * FROM rewards WHERE user_id = ? ORDER BY awarded_at DESC')
+      .all(Number(req.user.id))
+      .map(mapRewardRow);
+    const summary = buildProgressSummary({ user, workouts, progressLogs, rewards });
+
+    res.json(
+      buildProgressReport({
+        user,
+        summary,
+        workouts,
+        progressLogs,
+        rewards,
+      }),
+    );
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -87,6 +119,13 @@ router.post('/', authMiddleware, async (req, res) => {
     if (weight !== undefined) {
       updateUserById(req.user.id, { weight });
     }
+
+    createNotification({
+      userId: req.user.id,
+      title: 'Progress updated',
+      body: `Your new progress entry was saved with weight ${weight ?? 'N/A'} and consistency score ${progress.consistencyScore || 0}%.`,
+      kind: 'progress',
+    });
 
     res.status(201).json(progress);
   } catch (error) {

@@ -4,6 +4,7 @@ const authMiddleware = require('../middleware/auth');
 const { buildRecommendation } = require('../services/recommendationEngine');
 const { calculateWorkoutTotals, getDayKey, calculateStreak, syncRewardsForStreak } = require('../services/analytics');
 const {
+  createNotification,
   db,
   mapExerciseRow,
   mapWorkoutTemplateRow,
@@ -91,6 +92,27 @@ router.post('/templates', authMiddleware, (req, res) => {
   }
 });
 
+router.delete('/templates/:templateId', authMiddleware, (req, res) => {
+  try {
+    const existing = db
+      .prepare('SELECT * FROM workout_templates WHERE id = ? AND user_id = ?')
+      .get(Number(req.params.templateId), Number(req.user.id));
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Template not found.' });
+    }
+
+    db.prepare('DELETE FROM workout_templates WHERE id = ? AND user_id = ?').run(
+      Number(req.params.templateId),
+      Number(req.user.id),
+    );
+
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
 router.get('/recommendations', authMiddleware, async (req, res) => {
   try {
     const user = getUserById(req.user.id);
@@ -140,8 +162,27 @@ router.post('/', authMiddleware, async (req, res) => {
   const { exercises = [], location, aiSummary = '' } = req.body;
 
   try {
+    if (!Array.isArray(exercises) || exercises.length === 0) {
+      return res.status(400).json({ error: 'Add at least one exercise before saving the workout.' });
+    }
+
+    const normalizedExercises = exercises.map((exercise) => ({
+      exerciseId: exercise.exerciseId || exercise.id || '',
+      name: String(exercise.name || '').trim(),
+      sets: Number(exercise.sets || 0),
+      reps: Number(exercise.reps || 0),
+      duration: Number(exercise.duration || 0),
+      weight: Number(exercise.weight || 0),
+      youtubeId: exercise.youtubeId || '',
+    }));
+
+    if (normalizedExercises.some((exercise) => !exercise.name)) {
+      return res.status(400).json({ error: 'Every workout entry must include an exercise name.' });
+    }
+
     const totals = calculateWorkoutTotals(exercises);
     const createdAt = new Date().toISOString();
+    const dayKey = getDayKey(new Date(createdAt));
     const result = db
       .prepare(`
         INSERT INTO workouts (
@@ -160,8 +201,8 @@ router.post('/', authMiddleware, async (req, res) => {
       .run(
         Number(req.user.id),
         createdAt,
-        getDayKey(new Date(createdAt)),
-        toJson(exercises, []),
+        dayKey,
+        toJson(normalizedExercises, []),
         totals.totalDuration,
         totals.totalSets,
         totals.totalReps,
@@ -175,13 +216,91 @@ router.post('/', authMiddleware, async (req, res) => {
       .prepare('SELECT * FROM workouts WHERE user_id = ? ORDER BY date DESC')
       .all(Number(req.user.id))
       .map(mapWorkoutRow);
+    const user = getUserById(req.user.id);
     const streak = calculateStreak(workouts);
     const newRewards = await syncRewardsForStreak(req.user.id, streak);
+    const recommendation = await buildRecommendation({
+      user,
+      previousWorkouts: workouts.slice(0, 5),
+    });
+
+    const totalVolume = workouts.reduce(
+      (sum, item) => sum + Number(item.totalSets || 0) * Number(item.totalReps || 0),
+      0,
+    );
+    const consistencyScore = Math.min(100, Math.round((streak / 7) * 100));
+    const todaysWorkoutCount = workouts.filter((item) => item.dayKey === dayKey).length;
+    const existingProgressLog = db
+      .prepare('SELECT * FROM progress_logs WHERE user_id = ? AND substr(date, 1, 10) = ? ORDER BY date DESC LIMIT 1')
+      .get(Number(req.user.id), dayKey);
+
+    if (existingProgressLog) {
+      db.prepare(`
+        UPDATE progress_logs
+        SET workout_count = ?, total_volume = ?, consistency_score = ?, notes = ?
+        WHERE id = ?
+      `).run(
+        todaysWorkoutCount,
+        totalVolume,
+        consistencyScore,
+        existingProgressLog.notes || 'Auto-updated from today\'s workout activity.',
+        existingProgressLog.id,
+      );
+    } else {
+      db.prepare(`
+        INSERT INTO progress_logs (
+          user_id,
+          date,
+          weight,
+          body_fat,
+          workout_count,
+          total_volume,
+          consistency_score,
+          measurements_json,
+          notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        Number(req.user.id),
+        createdAt,
+        user.weight ?? null,
+        null,
+        todaysWorkoutCount,
+        totalVolume,
+        consistencyScore,
+        toJson({}, {}),
+        'Auto-created from workout completion.',
+      );
+    }
+
+    createNotification({
+      userId: req.user.id,
+      title: 'Workout saved',
+      body: `You logged ${normalizedExercises.length} exercises and extended your streak to ${streak} day${streak === 1 ? '' : 's'}.`,
+      kind: 'workout',
+    });
+
+    if (newRewards.length) {
+      newRewards.forEach((reward) => {
+        createNotification({
+          userId: req.user.id,
+          title: `Reward unlocked: ${reward.title}`,
+          body: `${reward.description} You earned ${reward.points} points.`,
+          kind: 'reward',
+        });
+      });
+    }
 
     res.status(201).json({
       workout,
       streak,
       rewardsAwarded: newRewards,
+      nextRecommendation: recommendation.nextExercise,
+      workoutSummary: {
+        totalSets: totals.totalSets,
+        totalReps: totals.totalReps,
+        totalDuration: totals.totalDuration,
+        estimatedCalories: totals.estimatedCalories,
+      },
     });
   } catch (error) {
     res.status(400).json({ error: error.message });

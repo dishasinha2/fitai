@@ -73,6 +73,8 @@ function Requests() {
     <Layout
       title="Request Inbox"
       subtitle="Review incoming public website requests for demos, premium plans, partnerships, and product questions."
+      heroLabel="Lead Capture"
+      heroImage="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1600&q=80"
     >
       {error ? (
         <div className="mb-6 rounded-3xl border border-rose-500/30 bg-rose-500/10 px-5 py-4 text-sm text-rose-100">
@@ -82,31 +84,31 @@ function Requests() {
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <section className="space-y-6">
-          <div className="glass-card glass-morphism rounded-[2rem] p-6">
-            <p className="section-title text-sm font-semibold text-cyan-300">Lead Snapshot</p>
-            <h2 className="mt-3 text-2xl font-semibold text-white">Public contact pipeline</h2>
+          <div className="fitai-ref-app-card p-6">
+            <p className="fitai-ref-kicker">Lead Snapshot</p>
+            <h2 className="fitai-ref-card-title mt-3">Public contact pipeline</h2>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {summaryCards.map(([label, value]) => (
-                <div key={label} className="glass-morphism metric-glow rounded-3xl p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{label}</p>
-                  <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
+                <div key={label} className="fitai-ref-stat-block p-4">
+                  <p className="fitai-ref-stat-label">{label}</p>
+                  <p className="fitai-ref-stat-value mt-3">{value}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="glass-card glass-morphism rounded-[2rem] p-6">
-            <p className="section-title text-sm font-semibold text-emerald-300">Filters</p>
+          <div className="fitai-ref-app-card p-6">
+            <p className="fitai-ref-kicker">Filters</p>
             <div className="mt-5 flex flex-wrap gap-3">
               {['all', 'demo', 'premium', 'partnership', 'support'].map((item) => (
                 <button
                   key={item}
                   type="button"
                   onClick={() => setFilter(item)}
-                  className={`rounded-full px-4 py-2 text-sm transition ${
+                  className={`px-4 py-2 text-sm transition ${
                     filter === item
-                      ? 'bg-emerald-400 text-slate-950'
-                      : 'bg-slate-800/80 text-slate-200 hover:bg-slate-700'
+                      ? 'fitai-ref-action text-white'
+                      : 'fitai-ref-action-secondary text-slate-200'
                   }`}
                 >
                   {item === 'all' ? 'All' : interestMeta[item].label}
@@ -115,8 +117,8 @@ function Requests() {
             </div>
           </div>
 
-          <div className="glass-card glass-morphism rounded-[2rem] p-6">
-            <p className="section-title text-sm font-semibold text-fuchsia-300">How To Use</p>
+          <div className="fitai-ref-app-card p-6">
+            <p className="fitai-ref-kicker">How To Use</p>
             <div className="mt-5 space-y-3">
               {[
                 'Review fresh public-site leads in one place.',
@@ -124,7 +126,7 @@ function Requests() {
                 'Use the message and company field to prioritize follow-up.',
                 'Pair this inbox with your hackathon demo flow for a fuller product story.',
               ].map((item) => (
-                <div key={item} className="glass-morphism rounded-2xl px-4 py-3 text-sm text-slate-300">
+                <div key={item} className="fitai-ref-app-card-soft px-4 py-3 text-sm text-slate-300">
                   {item}
                 </div>
               ))}
@@ -132,15 +134,15 @@ function Requests() {
           </div>
         </section>
 
-        <section className="glass-card glass-morphism rounded-[2rem] p-6">
+        <section className="fitai-ref-app-card p-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="section-title text-sm font-semibold text-amber-300">Live Requests</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">
+              <p className="fitai-ref-kicker">Live Requests</p>
+              <h2 className="fitai-ref-card-title mt-2">
                 {filter === 'all' ? 'All submissions' : `${interestMeta[filter].label} submissions`}
               </h2>
             </div>
-            <div className="rounded-2xl border border-slate-700 bg-slate-900/70 px-4 py-3">
+            <div className="fitai-ref-profile-box">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Visible</p>
               <p className="mt-1 text-xl font-semibold text-white">{visibleSubmissions.length}</p>
             </div>
@@ -152,7 +154,7 @@ function Requests() {
             ) : null}
 
             {!loading && visibleSubmissions.length === 0 ? (
-              <div className="glass-morphism rounded-3xl px-5 py-6 text-sm text-slate-400">
+              <div className="fitai-ref-app-card-soft px-5 py-6 text-sm text-slate-400">
                 No requests match this filter yet.
               </div>
             ) : null}
@@ -165,7 +167,7 @@ function Requests() {
                 };
 
                 return (
-                  <article key={submission._id} className="feature-panel glass-morphism rounded-3xl p-5">
+                  <article key={submission._id} className="fitai-ref-app-card-soft p-5">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
                         <div className="flex flex-wrap items-center gap-3">
@@ -182,13 +184,13 @@ function Requests() {
                       </div>
                       <a
                         href={`mailto:${submission.email}`}
-                        className="rounded-2xl border border-cyan-400/30 px-4 py-3 text-sm font-medium text-cyan-100 transition hover:border-cyan-300"
+                          className="fitai-ref-action-secondary px-4 py-3 text-sm font-medium text-cyan-100 transition hover:border-cyan-300"
                       >
                         Reply by Email
                       </a>
                     </div>
 
-                    <div className="mt-4 rounded-2xl border border-slate-700/80 bg-slate-950/40 px-4 py-4">
+                    <div className="mt-4 border border-slate-700/80 bg-slate-950/40 px-4 py-4">
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Message</p>
                       <p className="mt-3 leading-7 text-slate-300">
                         {submission.message || 'No custom message was included with this request.'}

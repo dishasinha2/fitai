@@ -4,6 +4,12 @@ import Layout from './Layout';
 import api from '../lib/api';
 import { getStoredUser } from '../lib/session';
 
+const formatSeconds = (seconds) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+};
+
 function StartWorkout() {
   const user = getStoredUser();
   const navigate = useNavigate();
@@ -15,8 +21,23 @@ function StartWorkout() {
   const [guidance, setGuidance] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [saveSummary, setSaveSummary] = useState(null);
   const [templateName, setTemplateName] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [sessionSeconds, setSessionSeconds] = useState(0);
+  const [sessionRunning, setSessionRunning] = useState(true);
+  const [restSeconds, setRestSeconds] = useState(60);
+  const [restRunning, setRestRunning] = useState(false);
+
+  const scoreTone = (score) => {
+    if (score >= 90) {
+      return 'text-emerald-200 bg-emerald-400/10 border-emerald-300/20';
+    }
+    if (score >= 75) {
+      return 'text-cyan-100 bg-cyan-400/10 border-cyan-300/20';
+    }
+    return 'text-amber-100 bg-amber-400/10 border-amber-300/20';
+  };
 
   useEffect(() => {
     async function bootstrapWorkout() {
@@ -27,20 +48,21 @@ function StartWorkout() {
           api.get('/workouts/templates'),
         ]);
 
+        const recommendedExercises = (sessionResponse.data.recommendation?.exercises || []).map((exercise) => ({
+          exerciseId: exercise._id || exercise.exerciseId,
+          name: exercise.name,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          duration: exercise.duration,
+          weight: 0,
+          youtubeId: exercise.youtubeId || '',
+        }));
+
         setSession(sessionResponse.data);
         setCatalog(exercisesResponse.data);
         setTemplates(templatesResponse.data);
-        setWorkout(
-          (sessionResponse.data.recommendation?.exercises || []).map((exercise) => ({
-            exerciseId: exercise.exerciseId,
-            name: exercise.name,
-            sets: exercise.sets,
-            reps: exercise.reps,
-            duration: exercise.duration,
-            weight: 0,
-            youtubeId: exercise.youtubeId || '',
-          })),
-        );
+        setWorkout(recommendedExercises);
+        setSelectedExerciseId(recommendedExercises[0]?.exerciseId || '');
       } catch (_error) {
         setMessage('Unable to load workout session. Please make sure the backend is running.');
       }
@@ -50,27 +72,72 @@ function StartWorkout() {
   }, []);
 
   useEffect(() => {
+    if (!selectedExerciseId) {
+      setGuidance(null);
+      return;
+    }
+
     async function loadGuidance() {
-      if (!selectedExerciseId) return;
-      const response = await api.get(`/workouts/guidance/${selectedExerciseId}`);
-      setGuidance(response.data);
+      try {
+        const response = await api.get(`/workouts/guidance/${selectedExerciseId}`);
+        setGuidance(response.data);
+      } catch (_error) {
+        setGuidance(null);
+      }
     }
 
     loadGuidance();
   }, [selectedExerciseId]);
+
+  useEffect(() => {
+    if (!sessionRunning) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      setSessionSeconds((current) => current + 1);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [sessionRunning]);
+
+  useEffect(() => {
+    if (!restRunning) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      setRestSeconds((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer);
+          setRestRunning(false);
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [restRunning]);
 
   const nextSuggestion = useMemo(() => {
     const source = session?.recommendation?.exercises || [];
     return source.find((exercise) => !workout.some((logged) => logged.name === exercise.name)) || source[0] || null;
   }, [session, workout]);
 
+  const activeExercise = workout.find((item) => String(item.exerciseId) === String(selectedExerciseId)) || workout[0] || null;
+
   const addExerciseToWorkout = (exercise) => {
-    if (workout.some((item) => item.name === exercise.name)) return;
+    const exerciseId = exercise._id || exercise.exerciseId;
+    if (workout.some((item) => item.name === exercise.name)) {
+      setSelectedExerciseId(exerciseId || '');
+      return;
+    }
 
     setWorkout((current) => [
       ...current,
       {
-        exerciseId: exercise._id || exercise.exerciseId,
+        exerciseId,
         name: exercise.name,
         sets: exercise.sets || 3,
         reps: exercise.reps || 10,
@@ -80,7 +147,7 @@ function StartWorkout() {
       },
     ]);
 
-    setSelectedExerciseId(exercise._id || exercise.exerciseId || '');
+    setSelectedExerciseId(exerciseId || '');
   };
 
   const updateWorkoutEntry = (index, field, value) => {
@@ -92,17 +159,18 @@ function StartWorkout() {
   };
 
   const applyTemplate = (template) => {
-    setWorkout(
-      (template.exercises || []).map((exercise) => ({
-        exerciseId: exercise.exerciseId,
-        name: exercise.name,
-        sets: Number(exercise.sets || 3),
-        reps: Number(exercise.reps || 10),
-        duration: Number(exercise.duration || 10),
-        weight: Number(exercise.weight || 0),
-        youtubeId: exercise.youtubeId || '',
-      })),
-    );
+    const mappedExercises = (template.exercises || []).map((exercise) => ({
+      exerciseId: exercise.exerciseId,
+      name: exercise.name,
+      sets: Number(exercise.sets || 3),
+      reps: Number(exercise.reps || 10),
+      duration: Number(exercise.duration || 10),
+      weight: Number(exercise.weight || 0),
+      youtubeId: exercise.youtubeId || '',
+    }));
+
+    setWorkout(mappedExercises);
+    setSelectedExerciseId(mappedExercises[0]?.exerciseId || '');
     setMessage(`Template "${template.name}" applied to your live session.`);
   };
 
@@ -133,9 +201,20 @@ function StartWorkout() {
     }
   };
 
+  const deleteTemplate = async (templateId) => {
+    try {
+      await api.delete(`/workouts/templates/${templateId}`);
+      setTemplates((current) => current.filter((item) => item.id !== templateId));
+      setMessage('Template removed.');
+    } catch (error) {
+      setMessage(error.response?.data?.error || 'Unable to delete template.');
+    }
+  };
+
   const saveWorkout = async () => {
     setSaving(true);
     setMessage('');
+    setSaveSummary(null);
 
     try {
       const response = await api.post('/workouts', {
@@ -145,6 +224,7 @@ function StartWorkout() {
       });
 
       setMessage(`Workout saved. Current streak: ${response.data.streak} day${response.data.streak === 1 ? '' : 's'}.`);
+      setSaveSummary(response.data);
       setTimeout(() => navigate('/dashboard'), 900);
     } catch (error) {
       setMessage(error.response?.data?.error || 'Unable to save workout.');
@@ -153,228 +233,460 @@ function StartWorkout() {
     }
   };
 
+  const startRestTimer = (seconds = 60) => {
+    setRestSeconds(seconds);
+    setRestRunning(true);
+  };
+
   return (
     <Layout
       title="Start Workout Session"
-      subtitle="Track exercises, log sets/reps/time, get the next move from FitAI, and keep your guidance video visible while you train."
+      subtitle="A calmer, clearer session view for tracking, resting, and following YouTube form guidance without getting lost."
+      heroLabel="Live Session"
+      heroImage="https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=1600&q=80"
     >
-      <div className="grid gap-6 xl:grid-cols-[1.3fr_0.95fr]">
-        <section className="space-y-6">
-          <div className="hero-gradient glass-card glass-morphism rounded-[2rem] p-6">
-            <p className="section-title text-sm font-semibold text-emerald-300">Session Start</p>
-            <h2 className="mt-3 text-3xl font-semibold text-white">AI-built workout session</h2>
-            <p className="mt-3 text-slate-300">
-              {session?.recommendation?.aiSummary || 'Preparing recommendations based on your goal, location, and recent sessions.'}
-            </p>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                ['Goal', user?.fitnessGoal?.replace('_', ' ') || '--'],
-                ['Location', user?.location || '--'],
-                ['Preferred duration', `${session?.sessionDefaults?.sessionDuration || user?.preferences?.sessionDuration || 45} min`],
-                ['Dynamic next move', nextSuggestion?.name || 'Loading'],
-              ].map(([label, value]) => (
-                <div key={label} className="glass-morphism rounded-3xl p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{label}</p>
-                  <p className="mt-3 text-lg font-semibold capitalize text-white">{value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="glass-card glass-morphism rounded-[2rem] p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="section-title text-sm font-semibold text-cyan-300">Recommended Plan</p>
-                <h3 className="mt-2 text-2xl font-semibold text-white">Suggested exercises for this session</h3>
-              </div>
-              {nextSuggestion && (
-                <div className="rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
-                  Next exercise: <span className="font-semibold">{nextSuggestion.name}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {(session?.recommendation?.exercises || []).map((exercise) => (
-                <button
-                  key={exercise.name}
-                  type="button"
-                  onClick={() => addExerciseToWorkout(exercise)}
-                  className="glass-morphism rounded-3xl p-5 text-left transition hover:border-cyan-400 hover:bg-slate-900/60"
-                >
-                  <p className="text-lg font-semibold text-white">{exercise.name}</p>
-                  <p className="mt-2 text-sm text-slate-400 capitalize">
-                    {exercise.category} - {exercise.sets} sets - {exercise.reps} reps - {exercise.duration} min
+      <div className="fitai-ref-dashboard-shell p-1">
+        <div className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
+          <section className="space-y-6">
+            <div className="fitai-ref-dashboard-hero p-6 sm:p-7">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="max-w-2xl">
+                  <p className="fitai-ref-kicker">Session Overview</p>
+                  <h2 className="fitai-ref-app-title mt-3">Train with focus, not clutter</h2>
+                  <p className="fitai-ref-copy mt-3 text-base">
+                    {session?.recommendation?.aiSummary ||
+                      'Preparing a focused session based on your goal, location, and recent training.'}
                   </p>
-                  <p className="mt-3 text-sm text-cyan-200">{exercise.reason}</p>
-                </button>
-              ))}
-            </div>
-          </div>
+                  {session?.recommendation?.recommendationInsights ? (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="fitai-ref-chip-dark">
+                        Goal: {session.recommendation.recommendationInsights.basedOnGoal.replace('_', ' ')}
+                      </span>
+                      <span className="fitai-ref-chip-dark">
+                        Location: {session.recommendation.recommendationInsights.basedOnLocation}
+                      </span>
+                      <span className="fitai-ref-chip-dark">
+                        History: {session.recommendation.recommendationInsights.recentExerciseCount} recent moves
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
 
-          <div className="glass-card glass-morphism rounded-[2rem] p-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="section-title text-sm font-semibold text-amber-300">Exercise Library</p>
-                <h3 className="mt-2 text-2xl font-semibold text-white">Add more exercises</h3>
+                <div className="rounded-2xl border border-rose-200/15 bg-rose-300/10 px-4 py-3 text-sm text-rose-50">
+                  Next move: <span className="font-semibold">{nextSuggestion?.name || 'Loading'}</span>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-3">
-                {catalog.slice(0, 6).map((exercise) => (
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {[
+                  ['Goal', user?.fitnessGoal?.replace('_', ' ') || '--'],
+                  ['Location', user?.location || '--'],
+                  ['Session timer', formatSeconds(sessionSeconds)],
+                  ['Exercises ready', String(workout.length || 0)],
+                ].map(([label, value]) => (
+                  <div key={label} className="fitai-ref-stat-block p-4">
+                    <p className="fitai-ref-stat-label">{label}</p>
+                    <p className="fitai-ref-stat-value mt-3 capitalize">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSessionRunning((current) => !current)}
+                  className="fitai-ref-action px-5 py-3 text-sm font-semibold"
+                >
+                  {sessionRunning ? 'Pause Session Timer' : 'Resume Session Timer'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => startRestTimer(60)}
+                  className="fitai-ref-action-secondary px-5 py-3 text-sm font-semibold"
+                >
+                  Start 60s Rest
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSessionRunning(false);
+                    setSessionSeconds(0);
+                  }}
+                  className="fitai-ref-action-secondary px-5 py-3 text-sm font-semibold"
+                >
+                  Reset Session Timer
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
+              <div className="fitai-ref-app-card p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="fitai-ref-kicker">Timers</p>
+                    <h3 className="fitai-ref-card-title mt-2">Session rhythm</h3>
+                  </div>
+                  <div className="rounded-full bg-rose-300/10 px-4 py-2 text-sm font-semibold text-rose-100">
+                    Rest {formatSeconds(restSeconds)}
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-4">
+                  <div className="fitai-ref-app-card-soft p-5">
+                    <p className="text-xs uppercase tracking-[0.2em] text-emerald-100/60">Session timer</p>
+                    <p className="mt-3 text-4xl font-semibold text-white">{formatSeconds(sessionSeconds)}</p>
+                    <p className="mt-2 text-sm text-slate-300">{sessionRunning ? 'Running now' : 'Paused'}</p>
+                  </div>
+                  <div className="fitai-ref-app-card-soft p-5">
+                    <p className="text-xs uppercase tracking-[0.2em] text-emerald-100/60">Rest timer</p>
+                    <p className="mt-3 text-4xl font-semibold text-white">{formatSeconds(restSeconds)}</p>
+                    <p className="mt-2 text-sm text-slate-300">{restRunning ? 'Counting down' : 'Ready for next set'}</p>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {[45, 60, 90].map((seconds) => (
+                    <button
+                      key={seconds}
+                      type="button"
+                      onClick={() => startRestTimer(seconds)}
+                      className="fitai-ref-action-secondary px-4 py-2 text-sm"
+                    >
+                      Start {seconds}s rest
+                    </button>
+                  ))}
                   <button
-                    key={exercise._id}
+                    type="button"
+                    onClick={() => {
+                      setRestRunning(false);
+                      setRestSeconds(0);
+                    }}
+                    className="fitai-ref-action-secondary px-4 py-2 text-sm"
+                  >
+                    Clear rest
+                  </button>
+                </div>
+              </div>
+
+              <div className="fitai-ref-app-card p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="fitai-ref-kicker">Guidance</p>
+                    <h3 className="fitai-ref-card-title mt-2">Current exercise video</h3>
+                  </div>
+                  {activeExercise ? (
+                    <span className="rounded-full bg-rose-300/10 px-4 py-2 text-sm font-semibold text-rose-100">
+                      {activeExercise.name}
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-emerald-100/10 bg-slate-950/50">
+                  {guidance?.embedUrl ? (
+                    <iframe
+                      title={guidance.exercise}
+                      src={guidance.embedUrl}
+                      className="aspect-video w-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <div className="p-6 text-sm leading-7 text-slate-400">
+                      Select an exercise from your session and FitAI will keep the YouTube form guide here.
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {guidance?.youtubeId ? (
+                    <a
+                      href={`https://www.youtube.com/watch?v=${guidance.youtubeId}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="fitai-ref-action-secondary px-4 py-2 text-sm font-semibold"
+                    >
+                      Open Full YouTube Session
+                    </a>
+                  ) : null}
+                  {guidance?.searchUrl ? (
+                    <a
+                      href={guidance.searchUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="fitai-ref-action-secondary px-4 py-2 text-sm"
+                    >
+                      Search More Videos
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="fitai-ref-app-card p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="fitai-ref-kicker">Recommended Plan</p>
+                  <h3 className="fitai-ref-card-title mt-2">Suggested exercises for this session</h3>
+                  <p className="mt-2 text-sm text-slate-400">Pick a move, add it to the session, or jump straight to form guidance.</p>
+                </div>
+                {nextSuggestion ? (
+                  <div className="rounded-2xl border border-rose-200/15 bg-rose-300/10 px-4 py-3 text-sm text-rose-50">
+                    Suggested next: <span className="font-semibold">{nextSuggestion.name}</span>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                {(session?.recommendation?.exercises || []).map((exercise) => (
+                  <div key={exercise.name} className="fitai-ref-app-card-soft p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xl font-semibold text-white">{exercise.name}</p>
+                        <p className="mt-2 text-sm capitalize text-slate-400">
+                          {exercise.category} | {exercise.sets} sets | {exercise.reps} reps | {exercise.duration} min
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className="rounded-full bg-rose-300/10 px-3 py-1 text-xs font-medium text-rose-100">
+                          Guided
+                        </span>
+                        <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${scoreTone(exercise.recommendationScore || 0)}`}>
+                          Fit Score {exercise.recommendationScore || 0}
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="mt-4 text-sm leading-6 text-emerald-50/90">{exercise.reason}</p>
+
+                    <div className="mt-5 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => addExerciseToWorkout(exercise)}
+                        className="fitai-ref-action px-4 py-2 text-sm font-semibold"
+                      >
+                        Add to Session
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedExerciseId(exercise._id || exercise.exerciseId || '')}
+                        className="fitai-ref-action-secondary px-4 py-2 text-sm font-semibold"
+                      >
+                        Watch Form
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="fitai-ref-app-card p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="fitai-ref-kicker">Saved Templates</p>
+                  <h3 className="fitai-ref-card-title mt-2">Reusable routines</h3>
+                </div>
+                <div className="flex w-full max-w-xl flex-col gap-3 sm:flex-row">
+                  <input
+                    value={templateName}
+                    onChange={(event) => setTemplateName(event.target.value)}
+                    placeholder="Template name"
+                    className="fitai-ref-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={saveTemplate}
+                    disabled={!workout.length || savingTemplate}
+                    className="fitai-ref-action px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {savingTemplate ? 'Saving...' : 'Save Template'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                {templates.length === 0 ? (
+                  <p className="text-sm text-slate-400">No saved templates yet. Save this workout once it feels right.</p>
+                ) : null}
+                {templates.map((template) => (
+                  <div key={template.id} className="fitai-ref-app-card-soft p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-lg font-semibold text-white">{template.name}</p>
+                        <p className="mt-2 text-sm capitalize text-slate-400">
+                          {template.goal?.replace('_', ' ')} | {template.location || 'gym'} | {template.exercises.length} exercises
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => applyTemplate(template)}
+                          className="fitai-ref-action-secondary px-3 py-1 text-xs font-semibold"
+                        >
+                          Apply
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteTemplate(template.id)}
+                          className="rounded-full border border-rose-300/20 bg-rose-400/10 px-3 py-1 text-xs font-semibold text-rose-100 transition hover:border-rose-300/35"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <aside className="space-y-6">
+            <div className="fitai-ref-app-card p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="fitai-ref-kicker">Live Session Log</p>
+                  <h3 className="fitai-ref-card-title mt-2">Track each exercise clearly</h3>
+                </div>
+                  <div className="rounded-full bg-rose-300/10 px-4 py-2 text-sm font-semibold text-rose-100">
+                  {workout.length} items
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                {workout.length === 0 ? (
+                  <p className="text-sm text-slate-400">Add a recommended exercise to begin tracking.</p>
+                ) : null}
+
+                {workout.map((exercise, index) => (
+                  <div key={`${exercise.name}-${index}`} className="fitai-ref-app-card-soft p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <button
+                          type="button"
+                          className="text-left text-xl font-semibold text-white"
+                          onClick={() => setSelectedExerciseId(exercise.exerciseId || '')}
+                        >
+                          {exercise.name}
+                        </button>
+                        <p className="mt-2 text-sm text-slate-400">Use the buttons below to open guidance or start rest right away.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedExerciseId(exercise.exerciseId || '');
+                          startRestTimer(60);
+                        }}
+                        className="fitai-ref-action-secondary px-4 py-2 text-xs font-semibold"
+                      >
+                        Watch + Rest
+                      </button>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                      {[
+                        ['sets', 'Sets'],
+                        ['reps', 'Reps'],
+                        ['duration', 'Minutes'],
+                        ['weight', 'Weight'],
+                      ].map(([field, label]) => (
+                        <label key={field} className="block">
+                          <span className="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-500">{label}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={exercise[field]}
+                            onChange={(event) => updateWorkoutEntry(index, field, event.target.value)}
+                            className="fitai-ref-input"
+                          />
+                        </label>
+                      ))}
+                    </div>
+
+                    <div className="mt-5 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedExerciseId(exercise.exerciseId || '')}
+                        className="fitai-ref-action px-4 py-2 text-sm font-semibold"
+                      >
+                        Show Guidance
+                      </button>
+                      {exercise.youtubeId ? (
+                        <a
+                          href={`https://www.youtube.com/watch?v=${exercise.youtubeId}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="fitai-ref-action-secondary px-4 py-2 text-sm"
+                        >
+                          Open in YouTube
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {message ? (
+                <div className="mt-5 rounded-2xl border border-rose-200/15 bg-rose-300/10 px-4 py-3 text-sm text-rose-50">
+                  {message}
+                </div>
+              ) : null}
+
+              {saveSummary?.workoutSummary ? (
+                <div className="mt-5 rounded-2xl border border-emerald-300/15 bg-emerald-300/10 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-emerald-100/70">Saved Workout Summary</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {[
+                      ['Total sets', saveSummary.workoutSummary.totalSets],
+                      ['Total reps', saveSummary.workoutSummary.totalReps],
+                      ['Duration', `${saveSummary.workoutSummary.totalDuration} min`],
+                      ['Calories', `${saveSummary.workoutSummary.estimatedCalories} kcal`],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-2xl border border-white/8 bg-black/15 px-4 py-3">
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{label}</p>
+                        <p className="mt-2 text-lg font-semibold text-white">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {saveSummary.rewardsAwarded?.length ? (
+                    <p className="mt-4 text-sm text-emerald-100">
+                      Rewards unlocked: {saveSummary.rewardsAwarded.map((reward) => reward.title).join(', ')}
+                    </p>
+                  ) : null}
+                  {saveSummary.nextRecommendation ? (
+                    <p className="mt-2 text-sm text-slate-200">
+                      Suggested next session opener: <span className="font-semibold">{saveSummary.nextRecommendation.name}</span>
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={saveWorkout}
+                disabled={!workout.length || saving}
+                className="fitai-ref-action mt-5 w-full px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? 'Saving workout...' : 'Save Daily Workout Log'}
+              </button>
+            </div>
+
+            <div className="fitai-ref-app-card p-6">
+              <p className="fitai-ref-kicker">Exercise Library</p>
+              <h3 className="fitai-ref-card-title mt-2">Quick add shortcuts</h3>
+              <div className="mt-5 flex flex-wrap gap-3">
+                {catalog.slice(0, 10).map((exercise) => (
+                  <button
+                    key={exercise.id}
                     type="button"
                     onClick={() => addExerciseToWorkout(exercise)}
-                    className="rounded-full border border-slate-700 px-4 py-2 text-sm text-slate-200 transition hover:border-amber-300 hover:text-white"
+                    className="fitai-ref-action-secondary px-4 py-2 text-sm"
                   >
                     {exercise.name}
                   </button>
                 ))}
               </div>
             </div>
-          </div>
-
-          <div className="glass-card glass-morphism rounded-[2rem] p-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="section-title text-sm font-semibold text-fuchsia-300">Saved Templates</p>
-                <h3 className="mt-2 text-2xl font-semibold text-white">Reusable workout routines</h3>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <input
-                  value={templateName}
-                  onChange={(event) => setTemplateName(event.target.value)}
-                  placeholder="Template name"
-                  className="input-3d rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-white outline-none transition focus:border-fuchsia-400"
-                />
-                <button
-                  type="button"
-                  onClick={saveTemplate}
-                  disabled={!workout.length || savingTemplate}
-                  className="rounded-2xl bg-fuchsia-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {savingTemplate ? 'Saving...' : 'Save Template'}
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {templates.length === 0 && (
-                <p className="text-sm text-slate-400">No saved templates yet. Save your current routine to reuse it later.</p>
-              )}
-              {templates.map((template) => (
-                <button
-                  key={template._id}
-                  type="button"
-                  onClick={() => applyTemplate(template)}
-                  className="feature-panel glass-morphism rounded-3xl p-5 text-left"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-lg font-semibold text-white">{template.name}</p>
-                      <p className="mt-1 text-sm text-slate-400 capitalize">
-                        {template.goal?.replace('_', ' ')} • {template.location || 'gym'} • {template.exercises.length} exercises
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-fuchsia-400/10 px-3 py-1 text-xs font-medium text-fuchsia-200">
-                      Apply
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <aside className="space-y-6">
-          <div className="glass-card glass-morphism rounded-[2rem] p-6">
-            <p className="section-title text-sm font-semibold text-rose-300">Workout Tracking</p>
-            <h3 className="mt-3 text-2xl font-semibold text-white">Live session log</h3>
-
-            <div className="mt-5 space-y-4">
-              {workout.length === 0 && <p className="text-sm text-slate-400">Add a recommended exercise to begin tracking.</p>}
-              {workout.map((exercise, index) => (
-                <div key={`${exercise.name}-${index}`} className="glass-morphism rounded-3xl p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <button
-                        type="button"
-                        className="text-left text-lg font-semibold text-white"
-                        onClick={() => setSelectedExerciseId(exercise.exerciseId || '')}
-                      >
-                        {exercise.name}
-                      </button>
-                      <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">
-                        Tap name for guidance video
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    {[
-                      ['sets', 'Sets'],
-                      ['reps', 'Reps'],
-                      ['duration', 'Duration'],
-                      ['weight', 'Weight'],
-                    ].map(([field, label]) => (
-                      <label key={field} className="block">
-                        <span className="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-500">{label}</span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={exercise[field]}
-                          onChange={(event) => updateWorkoutEntry(index, field, event.target.value)}
-                          className="input-3d w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-white outline-none transition focus:border-rose-300"
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {message && <div className="mt-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">{message}</div>}
-
-            <button
-              type="button"
-              onClick={saveWorkout}
-              disabled={!workout.length || saving}
-              className="mt-5 w-full rounded-2xl bg-rose-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saving ? 'Saving workout...' : 'Save Daily Workout Log'}
-            </button>
-          </div>
-
-          <div className="glass-card glass-morphism rounded-[2rem] p-6">
-            <p className="section-title text-sm font-semibold text-violet-300">Exercise Guidance</p>
-            <h3 className="mt-3 text-2xl font-semibold text-white">Correct form video</h3>
-            <div className="mt-5 overflow-hidden rounded-3xl border border-slate-700 bg-slate-950/50">
-              {guidance?.embedUrl ? (
-                <iframe
-                  title={guidance.exercise}
-                  src={guidance.embedUrl}
-                  className="aspect-video w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              ) : (
-                <div className="p-5 text-sm text-slate-400">
-                  Select an exercise to view guidance. If no seeded video exists, FitAI falls back to YouTube search.
-                </div>
-              )}
-            </div>
-            {guidance?.searchUrl && (
-              <a
-                href={guidance.searchUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 inline-flex rounded-full border border-violet-400/30 px-4 py-2 text-sm text-violet-200 transition hover:border-violet-300"
-              >
-                Open YouTube search fallback
-              </a>
-            )}
-          </div>
-        </aside>
+          </aside>
+        </div>
       </div>
     </Layout>
   );

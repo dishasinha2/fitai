@@ -99,6 +99,11 @@ const seededExercises = [
   },
 ];
 
+const adminEmails = (process.env.ADMIN_EMAILS || 'admin@fitai.app')
+  .split(',')
+  .map((value) => value.trim().toLowerCase())
+  .filter(Boolean);
+
 const parseJson = (value, fallback) => {
   if (!value) {
     return fallback;
@@ -123,6 +128,7 @@ const mapUserRow = (row) => {
     id: String(row.id),
     name: row.name,
     email: row.email,
+    role: row.role || 'user',
     age: row.age,
     weight: row.weight,
     height: row.height,
@@ -278,6 +284,73 @@ const mapWorkoutTemplateRow = (row) => {
   };
 };
 
+const mapReminderRow = (row) => {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    _id: String(row.id),
+    id: String(row.id),
+    user: String(row.user_id),
+    title: row.title,
+    type: row.type,
+    timeOfDay: row.time_of_day,
+    days: parseJson(row.days_json, []),
+    enabled: Boolean(row.is_enabled),
+    createdAt: row.created_at,
+  };
+};
+
+const mapNotificationRow = (row) => {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    _id: String(row.id),
+    id: String(row.id),
+    user: String(row.user_id),
+    title: row.title,
+    body: row.body,
+    kind: row.kind,
+    isRead: Boolean(row.is_read),
+    createdAt: row.created_at,
+  };
+};
+
+const mapDietAdherenceRow = (row) => {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    _id: String(row.id),
+    id: String(row.id),
+    user: String(row.user_id),
+    dietPlanId: String(row.diet_plan_id),
+    mealName: row.meal_name,
+    dayKey: row.day_key,
+    completedAt: row.completed_at,
+  };
+};
+
+const mapDietGroceryItemRow = (row) => {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    _id: String(row.id),
+    id: String(row.id),
+    user: String(row.user_id),
+    dietPlanId: String(row.diet_plan_id),
+    itemName: row.item_name,
+    checked: Boolean(row.is_checked),
+    updatedAt: row.updated_at,
+  };
+};
+
 const defaultPreferences = {
   workoutDaysPerWeek: 3,
   sessionDuration: 45,
@@ -292,6 +365,7 @@ const initDatabase = () => {
       name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
+      role TEXT DEFAULT 'user',
       age INTEGER,
       weight REAL,
       height REAL,
@@ -397,7 +471,76 @@ const initDatabase = () => {
       created_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS reminders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      type TEXT NOT NULL,
+      time_of_day TEXT NOT NULL,
+      days_json TEXT NOT NULL,
+      is_enabled INTEGER DEFAULT 1,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      is_read INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS reminder_delivery_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      reminder_id INTEGER NOT NULL,
+      day_key TEXT NOT NULL,
+      delivered_at TEXT NOT NULL,
+      UNIQUE (user_id, reminder_id, day_key),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (reminder_id) REFERENCES reminders(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS diet_adherence (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      diet_plan_id INTEGER NOT NULL,
+      meal_name TEXT NOT NULL,
+      day_key TEXT NOT NULL,
+      completed_at TEXT NOT NULL,
+      UNIQUE (user_id, diet_plan_id, meal_name, day_key),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (diet_plan_id) REFERENCES diet_plans(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS diet_grocery_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      diet_plan_id INTEGER NOT NULL,
+      item_name TEXT NOT NULL,
+      is_checked INTEGER DEFAULT 0,
+      updated_at TEXT NOT NULL,
+      UNIQUE (user_id, diet_plan_id, item_name),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (diet_plan_id) REFERENCES diet_plans(id) ON DELETE CASCADE
+    );
   `);
+
+  const userColumns = db.prepare("PRAGMA table_info('users')").all();
+  const hasRoleColumn = userColumns.some((column) => column.name === 'role');
+  if (!hasRoleColumn) {
+    db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'");
+  }
+
+  if (adminEmails.length) {
+    const placeholders = adminEmails.map(() => '?').join(', ');
+    db.prepare(`UPDATE users SET role = 'admin' WHERE lower(email) IN (${placeholders})`).run(...adminEmails);
+  }
 
   const exerciseCount = db.prepare('SELECT COUNT(*) AS count FROM exercises').get().count;
 
@@ -444,6 +587,7 @@ const createUser = (user) => {
         name,
         email,
         password,
+        role,
         age,
         weight,
         height,
@@ -452,12 +596,13 @@ const createUser = (user) => {
         location,
         preferences_json,
         created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     .run(
       user.name,
       user.email,
       user.password,
+      adminEmails.includes(String(user.email).toLowerCase()) ? 'admin' : 'user',
       user.age ?? null,
       user.weight ?? null,
       user.height ?? null,
@@ -515,6 +660,23 @@ const updateUserById = (id, updates = {}) => {
   return getUserById(id);
 };
 
+const createNotification = ({ userId, title, body, kind = 'system' }) => {
+  const createdAt = new Date().toISOString();
+  const result = db
+    .prepare(`
+      INSERT INTO notifications (
+        user_id,
+        title,
+        body,
+        kind,
+        created_at
+      ) VALUES (?, ?, ?, ?, ?)
+    `)
+    .run(Number(userId), title, body, kind, createdAt);
+
+  return mapNotificationRow(db.prepare('SELECT * FROM notifications WHERE id = ?').get(result.lastInsertRowid));
+};
+
 module.exports = {
   db,
   DB_PATH,
@@ -530,9 +692,14 @@ module.exports = {
   mapRewardRow,
   mapContactSubmissionRow,
   mapWorkoutTemplateRow,
+  mapReminderRow,
+  mapNotificationRow,
+  mapDietAdherenceRow,
+  mapDietGroceryItemRow,
   createUser,
   getUserByEmail,
   getUserById,
   getUserWithPasswordByEmail,
   updateUserById,
+  createNotification,
 };
