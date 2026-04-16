@@ -351,6 +351,25 @@ const mapDietGroceryItemRow = (row) => {
   };
 };
 
+const mapAuthAttemptRow = (row) => {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    _id: String(row.id),
+    id: String(row.id),
+    userId: row.user_id ? String(row.user_id) : null,
+    endpoint: row.endpoint,
+    outcome: row.outcome,
+    tokenSource: row.token_source || '',
+    ipAddress: row.ip_address || '',
+    userAgent: row.user_agent || '',
+    details: parseJson(row.details_json, {}),
+    createdAt: row.created_at,
+  };
+};
+
 const defaultPreferences = {
   workoutDaysPerWeek: 3,
   sessionDuration: 45,
@@ -529,6 +548,31 @@ const initDatabase = () => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (diet_plan_id) REFERENCES diet_plans(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS recommendation_feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      exercise_name TEXT NOT NULL,
+      feedback_value INTEGER NOT NULL,
+      feedback_text TEXT,
+      source_screen TEXT,
+      context_json TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS auth_attempt_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      endpoint TEXT NOT NULL,
+      outcome TEXT NOT NULL,
+      token_source TEXT,
+      ip_address TEXT,
+      user_agent TEXT,
+      details_json TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
   `);
 
   const userColumns = db.prepare("PRAGMA table_info('users')").all();
@@ -677,6 +721,45 @@ const createNotification = ({ userId, title, body, kind = 'system' }) => {
   return mapNotificationRow(db.prepare('SELECT * FROM notifications WHERE id = ?').get(result.lastInsertRowid));
 };
 
+const createAuthAttemptLog = ({
+  userId = null,
+  endpoint,
+  outcome,
+  tokenSource = '',
+  ipAddress = '',
+  userAgent = '',
+  details = {},
+}) => {
+  const createdAt = new Date().toISOString();
+  const result = db
+    .prepare(
+      `
+        INSERT INTO auth_attempt_logs (
+          user_id,
+          endpoint,
+          outcome,
+          token_source,
+          ip_address,
+          user_agent,
+          details_json,
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    )
+    .run(
+      userId ? Number(userId) : null,
+      endpoint,
+      outcome,
+      tokenSource,
+      ipAddress,
+      userAgent,
+      toJson(details, {}),
+      createdAt,
+    );
+
+  return mapAuthAttemptRow(db.prepare('SELECT * FROM auth_attempt_logs WHERE id = ?').get(result.lastInsertRowid));
+};
+
 module.exports = {
   db,
   DB_PATH,
@@ -696,10 +779,12 @@ module.exports = {
   mapNotificationRow,
   mapDietAdherenceRow,
   mapDietGroceryItemRow,
+  mapAuthAttemptRow,
   createUser,
   getUserByEmail,
   getUserById,
   getUserWithPasswordByEmail,
   updateUserById,
   createNotification,
+  createAuthAttemptLog,
 };

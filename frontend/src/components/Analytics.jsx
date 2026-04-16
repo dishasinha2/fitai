@@ -87,6 +87,7 @@ function Analytics() {
             ['Diet Plans', data.metrics.totalDietPlans || 0],
             ['Reminders', data.metrics.activeReminders || 0],
             ['Unread Alerts', data.metrics.unreadNotifications || 0],
+            ['Reco Feedback', data.metrics.recommendationFeedback || 0],
           ].map(([label, value]) => (
             <div key={label} className="fitai-ref-stat-block p-5">
               <p className="fitai-ref-stat-label">{label}</p>

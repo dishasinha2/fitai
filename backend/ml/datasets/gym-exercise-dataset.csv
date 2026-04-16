@@ -1,0 +1,405 @@
+exercise,bodyPart,equipment,difficulty
+Pull-Up,upper_body,machine,intermediate
+Squat – Barbell,upper_body,barbell,advanced
+Push-Up,upper_body,none,beginner
+Romanian Deadlift – Barbell,upper_body,barbell,advanced
+Romanian Deadlift – Dumbbell,upper_body,dumbbell,intermediate
+Single-Leg Romanian Deadlift – Dumbbell,upper_body,dumbbell,intermediate
+Squat – Bodyweight,legs,bodyweight,beginner
+Face Pull,upper_body,machine,intermediate
+Bench Press – Barbell,upper_body,barbell,advanced
+Squat – Dumbbell,upper_body,dumbbell,intermediate
+Deadlift – Barbell,upper_body,barbell,advanced
+Plank,upper_body,none,beginner
+Leg Press – Machine,legs,machine,intermediate
+One-Handed Cross-Body Curl,upper_body,dumbbell,intermediate
+Frog Pumps,legs,dumbbell,intermediate
+Lying Windshield Wiper,core,bodyweight,beginner
+Dip – Bar,upper_body,bodyweight,beginner
+Arnold Press,upper_body,dumbbell,intermediate
+Back Extension,upper_body,bench,intermediate
+One-Legged Glute Bridge,legs,none,beginner
+Curl – Bodyweight,upper_body,bodyweight,beginner
+Hanging Leg Raise,upper_body,machine,intermediate
+Burpee – BOSU,upper_body,ball,advanced
+Shoulder Press – Machine,upper_body,machine,intermediate
+Leg Extension,legs,machine,intermediate
+Close-Grip Feet-Up Bench Press – Barbell,upper_body,barbell,advanced
+Rear Delt Row – Barbell,upper_body,barbell,advanced
+Hip Abduction – Machine,legs,machine,intermediate
+Cable Curl – Rope,upper_body,machine,intermediate
+Plank - BOSU,upper_body,ball,beginner
+Glute Kickback – Machine,legs,machine,intermediate
+Pause Squat – Barbell,upper_body,barbell,advanced
+Walking Lunge – Barbell,legs,barbell,advanced
+Rotational Throw – Medicine Ball,core,ball,beginner
+Row – T-Bar,upper_body,machine,intermediate
+Shoulder Press – Dumbbell,upper_body,dumbbell,intermediate
+Upright Row – Barbell,upper_body,barbell,advanced
+Rear Delt Row – Dumbbell,upper_body,dumbbell,intermediate
+Floor Press – Dumbbell,upper_body,dumbbell,intermediate
+Incline Curl – Dumbbell,upper_body,dumbbell,intermediate
+Eccentric Heel Drop,legs,ball,beginner
+Squat – Belt,legs,machine,intermediate
+Hang Power Clean,upper_body,barbell,advanced
+V-Up,core,none,beginner
+Hack Squat – Barbell,legs,barbell,advanced
+Straight Arm Lat Pulldown,upper_body,machine,intermediate
+Lying Internal Shoulder Rotation – Dumbbell,full_body,dumbbell,intermediate
+Squat – Landmine,legs,barbell,advanced
+Push-Up – Feet in Rings,upper_body,none,beginner
+Lateral Walk – Band,legs,resistance_band,beginner
+Sit-Up,core,none,beginner
+Incline Bench Press – Smith Machine,upper_body,machine,intermediate
+Chest Fly – Dumbbell,upper_body,dumbbell,intermediate
+Mountain Climbers,core,none,beginner
+Tricep Pushdown – Cable With Bar,upper_body,machine,intermediate
+Horizontal External Shoulder Rotation – Dumbbell,upper_body,dumbbell,intermediate
+Supinated Grip Lat Pulldown,upper_body,machine,intermediate
+Wrist Curl Behind the Back – Barbell,upper_body,barbell,advanced
+Incline Push-Up,upper_body,bench,intermediate
+High to Low Wood Chop – Cable,core,cable,intermediate
+Deadlift – Dumbbell,upper_body,dumbbell,intermediate
+Block Snatch,upper_body,barbell,advanced
+Chest Fly – Machine,upper_body,machine,intermediate
+Chest Press – Cable,upper_body,machine,intermediate
+Kneeling Side Plank,core,none,beginner
+Hip Thrust – Band,legs,barbell,advanced
+Row – Dumbbell,upper_body,dumbbell,intermediate
+Stiff-Legged Deadlift – Barbell,upper_body,barbell,advanced
+Incline Bench Press – Dumbbell,upper_body,dumbbell,intermediate
+Calf Raise – Machine,legs,machine,intermediate
+Squat – Smith Machine,upper_body,machine,intermediate
+Power Jerk,upper_body,barbell,advanced
+Preacher Curl – Barbell,upper_body,barbell,advanced
+Clean and Jerk,upper_body,barbell,advanced
+Hang Clean,upper_body,barbell,advanced
+Glute Bridge,legs,none,beginner
+Incline Bench Press – Barbell,upper_body,barbell,advanced
+Lateral Raise – Machine,upper_body,machine,intermediate
+One-Handed Plate Pinch,upper_body,none,beginner
+Hip Thrust – Barbell,legs,barbell,advanced
+Preacher Curl – Dumbbell,upper_body,dumbbell,intermediate
+External Shoulder Rotation – Band,upper_body,resistance_band,beginner
+Internal Shoulder Rotation – Band,full_body,resistance_band,beginner
+Good Morning,upper_body,barbell,advanced
+Chin-Up,upper_body,none,beginner
+Wrist Extension – Barbell,upper_body,barbell,advanced
+Rack Pull,upper_body,barbell,advanced
+Front Raise – Dumbbell,upper_body,dumbbell,intermediate
+Standing Glute Kickback – Machine,legs,machine,intermediate
+Hang Snatch,upper_body,barbell,advanced
+Kneeling Ab Wheel Roll-Out,core,bodyweight,beginner
+Pull-Apart – Band,upper_body,resistance_band,beginner
+Monkey Row,upper_body,dumbbell,intermediate
+Decline Bench Press – Dumbbell,upper_body,dumbbell,intermediate
+Pullover – Barbell,upper_body,barbell,advanced
+One-Legged Hip Thrust,legs,bench,intermediate
+Reverse Fly – Dumbbell,upper_body,dumbbell,intermediate
+Curl – Dumbbell,upper_body,dumbbell,intermediate
+Torso Rotation Machine,core,machine,intermediate
+Seated Row – Machine,upper_body,machine,intermediate
+Pullover – Dumbbell,upper_body,dumbbell,intermediate
+Farmers Walk,upper_body,dumbbell,intermediate
+Lunge – Bodyweight,legs,bodyweight,beginner
+Curl – Barbell,upper_body,barbell,advanced
+Dip – Bench,upper_body,bench,intermediate
+Horizontal Internal Shoulder Rotation – Dumbbell,full_body,dumbbell,intermediate
+Bar Hang,upper_body,none,beginner
+Rear Delt Row – Cable,upper_body,machine,intermediate
+Goblet Squat,legs,dumbbell,intermediate
+Seated Shoulder Press – Dumbbell,upper_body,dumbbell,intermediate
+Deadlift – Trap Bar High Handles,upper_body,none,beginner
+Shallow Lunge – Bodyweight,legs,bodyweight,beginner
+Sumo Deadlift – Barbell,upper_body,barbell,advanced
+Twist – Cable,core,machine,intermediate
+Seated Leg Curl,legs,machine,intermediate
+Hanging Knee Raise,upper_body,machine,intermediate
+Push Press – Dumbbell,upper_body,dumbbell,intermediate
+Push Press – Barbell,upper_body,barbell,advanced
+Overhead Tricep Extension – Bodyweight,upper_body,machine,intermediate
+Horizontal Wood Chop – Band,core,resistance_band,beginner
+Kneeling Push-Up,upper_body,none,beginner
+Side Kicks – Band,legs,resistance_band,beginner
+Lateral Raise – Dumbbell,upper_body,dumbbell,intermediate
+Front Raise – Barbell,upper_body,barbell,advanced
+One-Handed Row – Dumbbell,upper_body,dumbbell,intermediate
+Roll-Up,core,none,beginner
+Inverted Row,upper_body,machine,intermediate
+Crunch,core,bodyweight,beginner
+One-Handed Overhead Tricep Extension – Dumbbell,upper_body,dumbbell,intermediate
+Close-Grip Push-Up,upper_body,cardio_machine,intermediate
+Behind the Neck Press – Barbell,upper_body,barbell,advanced
+Power Clean,legs,barbell,advanced
+Deficit Deadlift,upper_body,barbell,advanced
+Wrist Curl – Barbell,upper_body,barbell,advanced
+Crunch – Cable,core,machine,intermediate
+Decline Sit-Up,core,bench,intermediate
+Flutter Kick,core,none,beginner
+Dead Bug,core,bodyweight,beginner
+Chest Press – Machine,upper_body,machine,intermediate
+Gripper,upper_body,machine,intermediate
+Lying External Shoulder Rotation – Dumbbell,upper_body,dumbbell,intermediate
+Overhead Tricep Extension – Cable With Rope,upper_body,machine,intermediate
+Snatch Grip Deadlift,upper_body,barbell,advanced
+Towel Pull-Up,upper_body,pullup_bar,advanced
+Oblique Crunch,core,none,beginner
+Lying Windshield Wiper with Bent Knees,core,bodyweight,beginner
+Push-Up – Hands in Rings,upper_body,none,beginner
+Single-Arm Hang – Bar,upper_body,none,beginner
+Shoulder Press – Barbell,upper_body,barbell,advanced
+Close Grip Seated Row,upper_body,machine,intermediate
+Power Clean and Press,upper_body,barbell,advanced
+Snatch,upper_body,barbell,advanced
+Hammer Curl – Dumbbell,upper_body,dumbbell,intermediate
+Hip Abduction – Band,legs,resistance_band,beginner
+Seated One-Handed Row – Cable,upper_body,machine,intermediate
+Lunge – Dumbbell,legs,dumbbell,intermediate
+Cable Curl – Bar,upper_body,machine,intermediate
+Hack Squat – Landmine,legs,barbell,advanced
+Concentration Curl,upper_body,dumbbell,intermediate
+One-Handed Tricep Pushdown – Cable,upper_body,machine,intermediate
+Hip Thrust – Machine,legs,machine,intermediate
+Squat Jerk,upper_body,barbell,advanced
+Seated Calf Raise,legs,machine,intermediate
+Split Jerk,upper_body,barbell,advanced
+Seated Snatch Grip Behind the Neck Press,upper_body,barbell,advanced
+Standing Snatch Grip Behind the Neck Press,upper_body,barbell,advanced
+Close-Grip Bench Press,upper_body,barbell,advanced
+Clean,upper_body,barbell,advanced
+One-Handed Wrist Curl – Dumbbell,upper_body,dumbbell,intermediate
+Standing Chest Fly – Cable,upper_body,machine,intermediate
+Floor Back Extension,upper_body,bodyweight,beginner
+Side Plank,core,none,beginner
+Pec Deck,upper_body,machine,intermediate
+Pronated Grip Lat Pulldown,upper_body,machine,intermediate
+Decline Bench Press – Barbell,upper_body,barbell,advanced
+Standing Cable Leg Curl,legs,machine,intermediate
+Cable Pull Through,upper_body,machine,intermediate
+Shrug – Barbell,full_body,barbell,advanced
+Bulgarian Split Squat,legs,bench,intermediate
+Crunch – Machine,core,machine,intermediate
+Shrug – Dumbbell,full_body,dumbbell,intermediate
+One-Legged Balance,legs,none,beginner
+Feet-Up Bench Press – Barbell,upper_body,barbell,advanced
+Curl – Machine,upper_body,machine,intermediate
+Reverse Fly – Machine,upper_body,machine,intermediate
+Hang Power Snatch,upper_body,barbell,advanced
+One-Handed Plate Wrist Curl,upper_body,bench,intermediate
+Kettlebell Swing,upper_body,kettlebell,intermediate
+Seated Oblique Twist,core,dumbbell,intermediate
+Lying Leg Curl,legs,machine,intermediate
+Hack Squat – Machine,legs,machine,intermediate
+One-Handed Wrist Extension – Dumbbell,upper_body,dumbbell,intermediate
+Seated Shoulder Press – Barbell,upper_body,barbell,advanced
+Lunge – Barbell,legs,barbell,advanced
+Kneeling Incline Push-Up,upper_body,bench,intermediate
+Plate Front Raise,upper_body,none,beginner
+Row – Barbell,upper_body,barbell,advanced
+One-Handed Lat Pulldown,upper_body,machine,intermediate
+Bench Press – Dumbbell,upper_body,dumbbell,intermediate
+Pendlay Row,upper_body,barbell,advanced
+Deadlift – Fat Bar,upper_body,none,beginner
+One-Handed Standing Chest Fly – Band,upper_body,resistance_band,beginner
+Bench Press – Smith Machine,upper_body,machine,intermediate
+Underhand Grip Inverted Row,upper_body,barbell,advanced
+Mountain Climbers – BOSU,core,ball,beginner
+Standing Bicycle Crunch,core,none,beginner
+Side-Lying Clamshell,legs,resistance_band,beginner
+Fire Hydrants,legs,none,beginner
+Push-Up Against Wall,upper_body,none,beginner
+Hip Adduction – Machine,legs,machine,intermediate
+Pause Deadlift – Barbell,upper_body,barbell,advanced
+Deadlift – Trap Bar Low Handles,upper_body,none,beginner
+Runner's 5,legs,none,beginner
+Calf Raise – Barbell,legs,barbell,advanced
+Oblique Sit-Up,core,none,beginner
+Sled Push,legs,none,beginner
+Overhead Tricep Extension – Barbell,upper_body,barbell,advanced
+Shrug –  Trap Bar,full_body,none,beginner
+Tricep Pushdown – Cable With Rope,upper_body,machine,intermediate
+Bicycle Crunch,core,bodyweight,beginner
+One-Handed Lateral Raise – Cable,upper_body,cable,intermediate
+Eccentric Chest Press,upper_body,machine,intermediate
+Squat – Box,upper_body,bench,intermediate
+Front Squat,upper_body,barbell,advanced
+Seated Shoulder Press – Smith Machine,upper_body,barbell,advanced
+Lying Leg Raise,core,bench,intermediate
+Eccentric Leg Extension,legs,machine,intermediate
+Power Snatch,upper_body,barbell,advanced
+Half Air Squat,legs,none,beginner
+Front Hold – Plate,upper_body,none,beginner
+Burpee,upper_body,bodyweight,advanced
+One-Handed Chest Press – Dumbbell,upper_body,dumbbell,intermediate
+Wide Grip Seated Row – Cable,upper_body,machine,intermediate
+Rope Wave,upper_body,none,beginner
+Alternating Rope Wave,upper_body,none,beginner
+Squat – BOSU,legs,ball,beginner
+Perfect Hang,upper_body,pullup_bar,advanced
+Seated Incline Front Raise – Dumbbell,upper_body,dumbbell,intermediate
+Prone Incline Front Raise – Dumbbell,upper_body,dumbbell,intermediate
+Kickstand Squat – Kettlebell,upper_body,kettlebell,intermediate
+One-Handed Shoulder Press – Landmine,upper_body,barbell,advanced
+External Shoulder Rotation – Cable,upper_body,machine,intermediate
+Internal Shoulder Rotation – Cable,full_body,machine,intermediate
+Pallof Press,core,machine,intermediate
+Landmine Rotation,core,barbell,advanced
+Eccentric Bicep Curl – Machine,upper_body,machine,intermediate
+Slam – Medicine Ball,upper_body,ball,beginner
+Rotational Slam – Medicine Ball,upper_body,ball,beginner
+Step-Up,legs,bench,intermediate
+Box Step-Up,legs,bodyweight,beginner
+Tire Flip,upper_body,none,beginner
+Push-Up – Medicine Ball,upper_body,ball,beginner
+Rolling Push-Up – Medicine Ball,upper_body,ball,beginner
+One-Handed Plank,upper_body,none,beginner
+Sled Pull,legs,ball,beginner
+Forearm Roll-Up – Barbell,upper_body,barbell,advanced
+Forearm Twist – Dumbbell,upper_body,dumbbell,intermediate
+Zottman Curl,upper_body,dumbbell,intermediate
+Z Press – Dumbbell,upper_body,dumbbell,intermediate
+Z Press – Barbell,upper_body,barbell,advanced
+Incline Hex Press – Dumbbell,upper_body,dumbbell,intermediate
+Skull Crusher – Barbell,upper_body,barbell,advanced
+Skull Crusher – Dumbbell,upper_body,dumbbell,intermediate
+Overhead Tricep Extension – Machine,upper_body,machine,intermediate
+In-Out Rope Wave,upper_body,none,beginner
+Upright Downward Internal Rotation – Cable,full_body,machine,intermediate
+Upright Upward External Rotation – Cable,upper_body,machine,intermediate
+Plank Pull Through,upper_body,dumbbell,intermediate
+Reverse Curl – Barbell,upper_body,barbell,advanced
+Hammer Curl – Cable With Rope,upper_body,machine,intermediate
+Meadows Row,upper_body,barbell,advanced
+One-Handed High-Cable Row,upper_body,machine,intermediate
+Calf Raise – Leg Press Machine,legs,machine,intermediate
+One-Handed Leaning Lateral Raise – Dumbbell,upper_body,dumbbell,intermediate
+Horizontal Wood Chop – Cable,core,machine,intermediate
+Single-Leg V-Up,core,bodyweight,beginner
+Single-Leg Tuck-Up,core,bodyweight,beginner
+Around the World – Kettlebell,core,kettlebell,intermediate
+Lu Raise – Dumbbell,upper_body,dumbbell,intermediate
+Standing External Shoulder Rotation – Dumbbell,upper_body,dumbbell,intermediate
+Crush Grip Curl – Dumbbell,upper_body,dumbbell,intermediate
+One-Handed Hammer Curl – Dumbbell,upper_body,dumbbell,intermediate
+One-Handed Hammer Isometric Hold – Dumbbell,upper_body,dumbbell,intermediate
+Hanging Side-To-Side Knee Drive,upper_body,pullup_bar,advanced
+Low Chest Fly – Cable,upper_body,machine,intermediate
+Lateral Lunge – Dumbbell,legs,dumbbell,intermediate
+Single-Arm Bottoms-Up Overhead Press – Kettlebell,upper_body,kettlebell,intermediate
+Close-Grip Incline Bench Press – Dumbbell,upper_body,dumbbell,intermediate
+Copenhagen Plank with Leg Lift,legs,bench,intermediate
+Alternating Z Press – Double Kettlebell,upper_body,kettlebell,intermediate
+Feet-Elevated Bulgarian Row – Ring,upper_body,bench,intermediate
+Alternating Arnold Press – Dumbbell,upper_body,dumbbell,intermediate
+Feet-Elevated Oblique Crunch – Stability Ball,core,ball,beginner
+Nordic Hamstring Curl,legs,bodyweight,beginner
+Kneeling Cuban Rotation – Barbell,upper_body,barbell,advanced
+Single-Arm Hang – Rings,upper_body,none,beginner
+Single-Arm Front Rack Contralateral Walking Lunge – Kettlebell,legs,kettlebell,intermediate
+Front Rack Knee Over Toe Split Squat – Dumbbell,legs,dumbbell,intermediate
+Single-Arm Bulgarian Split Squat – Dumbbell,legs,dumbbell,intermediate
+Single-Leg Romanian Deadlift – Landmine,legs,barbell,advanced
+Bench Press – Machine,upper_body,machine,intermediate
+Incline Bench Press – Machine,upper_body,machine,intermediate
+Decline Bench Press – Machine,upper_body,machine,intermediate
+One-Handed Overhead Contralateral Step-Up – Dumbbell,legs,dumbbell,intermediate
+Sumo Squat – Dumbbell,legs,dumbbell,intermediate
+Sumo Squat – Barbell,legs,barbell,advanced
+One-Handed Suitcase Walking Lunge – Dumbbell,legs,dumbbell,intermediate
+One-Handed Standing Chest Fly – Cable,upper_body,machine,intermediate
+Kneeling Pallof Press,core,machine,intermediate
+Isometric Pull-Up Hold,upper_body,pullup_bar,advanced
+Jump Squat – Bodyweight,legs,bodyweight,beginner
+Quadruped Hip Extension,legs,resistance_band,beginner
+Single-Arm Front Rack Walking Lunge – Dumbbell,legs,dumbbell,intermediate
+Single-Leg Romanian Deadlift Jump,legs,none,beginner
+Single-Arm Thruster – Landmine,upper_body,barbell,advanced
+Forearm Plank Knee to Elbow,core,none,beginner
+Skull Crusher – Cable with Rope,upper_body,machine,intermediate
+One-Handed Bayesian Curl – Cable,upper_body,machine,intermediate
+Bottoms Up Seesaw Overhead Press – Kettlebell,upper_body,kettlebell,intermediate
+Stability Ball Pullover – Dumbbell,upper_body,dumbbell,intermediate
+Front Rack Low Switch Cossack Squat – Kettlebell,legs,kettlebell,intermediate
+Alternating Single-Arm Dead Clean to Push Press – Kettlebell,upper_body,kettlebell,intermediate
+Single Arm Half Kneeling High Row – Cable,upper_body,machine,intermediate
+Archer Push Up – Rings,upper_body,none,beginner
+Front Rack March – Kettlebell,upper_body,kettlebell,intermediate
+Front Rack Curtsy Lunge – Barbell,legs,barbell,advanced
+Hang Power Clean and Jerk,upper_body,barbell,advanced
+Monster Walk – Band,legs,resistance_band,beginner
+Seated Good Morning – Barbell,upper_body,barbell,advanced
+Alternating Tall Kneeling Arnold Press – Hand Weights,upper_body,dumbbell,intermediate
+Seated Rotational Slam – Medicine Ball,core,ball,beginner
+Horn Grip Bicep Curl – Kettlebell,upper_body,kettlebell,intermediate
+Swing and High Pull – Double Kettlebell,upper_body,kettlebell,intermediate
+Split Squat – Barbell,legs,barbell,advanced
+Rebound External Rotation – Band,upper_body,resistance_band,beginner
+One-Arm Row Lunge – Band,upper_body,resistance_band,beginner
+One-Leg Prone Hip Extension,legs,none,beginner
+Drinking Bird Row – Band,upper_body,resistance_band,beginner
+Lying Hamstring Bridge,legs,bodyweight,beginner
+Standing Clamshell,legs,resistance_band,beginner
+One-Leg Front Foot Elevated Split Squat – Dumbbell,legs,dumbbell,intermediate
+Hip Hinge – Band,legs,resistance_band,beginner
+Seated Half Good Morning – Band,upper_body,resistance_band,beginner
+Prisoner Squat – Bodyweight,legs,bodyweight,beginner
+One-Leg Lying Heel Slide,legs,bodyweight,beginner
+Thumbs-Up Lateral Raise – Dumbbell,upper_body,dumbbell,intermediate
+One-Leg Kneeling Bottoms-Up Hold – Kettlebell,upper_body,kettlebell,intermediate
+Alternating Side Lunge Pull – Plate,legs,none,beginner
+Hand-Release Push-Up,upper_body,none,beginner
+Run,full_body,none,beginner
+Bike,full_body,cardio_machine,intermediate
+Row,full_body,none,beginner
+Elliptical,full_body,cardio_machine,intermediate
+Stair Climb,full_body,none,beginner
+Swim,full_body,none,beginner
+Jump Rope,full_body,none,beginner
+Aerobics Class,full_body,none,beginner
+High-Intensity Interval Training (HIIT),full_body,none,beginner
+Prone Assisted Neck Bridge,upper_body,ball,beginner
+One-Arm Tabletop Spine Twist,upper_body,none,beginner
+One-Leg Wide Lunge,legs,bodyweight,beginner
+One-Leg Seated Rock-Paper-Scissor Toes,legs,bodyweight,beginner
+One-Leg Seated Knee-to-Chest – Foam Roller,upper_body,bodyweight,beginner
+Seated Calf Massage – Lacrosse Ball,legs,ball,beginner
+One-Arm Front Bend Wall Push,upper_body,none,beginner
+One-Leg Lying Ankle Nerve Floss,legs,bodyweight,beginner
+Lying Overhead Shoulder Rotation – Dowel,upper_body,none,beginner
+Neck Twist – Lacrosse Ball,full_body,ball,beginner
+Alternating Lying Chin Tuck Neck Twist,full_body,bodyweight,beginner
+One-Arm Lying Spine Twist – Yoga Block,upper_body,none,beginner
+One-Leg Lying Outer Thigh Hip Twist,legs,bodyweight,beginner
+One-Leg Foot Plank – Yoga Block,legs,ball,beginner
+One-Arm Lunging Lower Back Wall Twist,upper_body,none,beginner
+One-Leg Seated Hamstring Roll – Foam Roller,legs,bodyweight,beginner
+One-Leg Elevated Pigeon Stretch,legs,bench,intermediate
+One-Arm Bicep Wall Stretch,upper_body,none,beginner
+Segmental Lower Back Flexion,upper_body,none,beginner
+One-Leg Incline Reverse Pigeon – Bench,legs,bench,intermediate
+One-Leg Incline Pigeon Stretch – Bench,legs,bench,intermediate
+One-Leg Seated Pretzel Stretch,legs,bodyweight,beginner
+One-Leg Lying Pretzel Stretch,legs,bodyweight,beginner
+Prone Quad Rolling – Foam Roller,legs,bodyweight,beginner
+Shoulder Teepee – Dowel,upper_body,none,beginner
+Seated Crossed Leg Forward Stretch,upper_body,bodyweight,beginner
+One-Leg Bent Knee Calf Stretch – Yoga Block,legs,kettlebell,intermediate
+Overhead Shrug Neck Rotation,full_body,none,beginner
+Front Line Opener,upper_body,bodyweight,beginner
+One-Arm Kneeling Spine Twist,upper_body,bodyweight,beginner
+One-Leg Prone Quad Stretch – Band,legs,resistance_band,beginner
+One-Leg Seated Calf Release – Lacrosse Ball,legs,ball,beginner
+One-Leg Seated Ankle Crosses,legs,none,beginner
+Hamstring Floor Sweep,upper_body,bodyweight,beginner
+Halo Neck Rotation,full_body,none,beginner
+One-Arm Prone Rotator Cuff External Rotation,upper_body,bodyweight,beginner
+Kneeling Reclining Hero Pose – Pillow,legs,bodyweight,beginner
+Wrist Extensor Rotation Stretch,upper_body,bench,intermediate
+One-Arm Posterior Shoulder Pull – Dowel,upper_body,none,beginner
+One-Arm Kneeling Lower Back Wall Sweep – Foam Roller,upper_body,none,beginner
+One-Arm Front Shoulder Active Massage – Lacrosse Ball,upper_body,ball,beginner
+Seated Knee To Heel Taps,legs,none,beginner
+Assisted Wrist Rotation,upper_body,none,beginner
+One-Leg Kneeling Couch Quad Stretch,legs,bodyweight,beginner
+Hands-And-Knees Segmental Cat Cow,upper_body,bodyweight,beginner
+One-Arm Seated Lower Back Rotation Stretch,upper_body,none,beginner

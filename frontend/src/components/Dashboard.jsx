@@ -4,6 +4,39 @@ import Layout from './Layout';
 import api from '../lib/api';
 import { getStoredUser, saveSession } from '../lib/session';
 
+const getConfidenceMeta = (mlProbability = 0) => {
+  if (mlProbability < 0.3) {
+    return {
+      label: 'Based on limited data',
+      toneClass: 'low',
+      message: "We're still learning your preferences. Log more workouts for better recommendations!",
+    };
+  }
+
+  if (mlProbability <= 0.7) {
+    return {
+      label: 'Moderate confidence',
+      toneClass: 'medium',
+      message: 'FitAI is picking up patterns from your history. A few more logged sessions will sharpen this recommendation.',
+    };
+  }
+
+  return {
+    label: 'High confidence',
+    toneClass: 'high',
+    message: 'This recommendation is strongly supported by your training patterns and FitAI model signals.',
+  };
+};
+
+function ConfidenceTooltip({ message }) {
+  return (
+    <span className="fitai-confidence-tooltip-group">
+      <span className="fitai-confidence-tooltip-trigger" aria-hidden="true">?</span>
+      <span className="fitai-confidence-tooltip">{message}</span>
+    </span>
+  );
+}
+
 function Dashboard() {
   const [state, setState] = useState({
     user: getStoredUser(),
@@ -27,6 +60,11 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [refreshingRewards, setRefreshingRewards] = useState(false);
+  const [coachCheckIn, setCoachCheckIn] = useState(null);
+  const [coachQuestion, setCoachQuestion] = useState('');
+  const [coachAnswer, setCoachAnswer] = useState(null);
+  const [askingCoach, setAskingCoach] = useState(false);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState('');
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
   const [profileForm, setProfileForm] = useState({
@@ -62,12 +100,13 @@ function Dashboard() {
     setLoading(true);
     setError('');
     try {
-      const [userResponse, workoutsResponse, rewardsResponse, progressResponse, recommendationResponse] = await Promise.all([
+      const [userResponse, workoutsResponse, rewardsResponse, progressResponse, recommendationResponse, coachResponse] = await Promise.all([
         api.get('/auth/me'),
         api.get('/workouts'),
         api.get('/rewards'),
         api.get('/progress'),
         api.get('/workouts/recommendations'),
+        api.get('/coach/check-in'),
       ]);
 
       saveSession({ token: localStorage.getItem('token'), user: userResponse.data });
@@ -79,6 +118,8 @@ function Dashboard() {
         progress: progressResponse.data,
         recommendation: recommendationResponse.data,
       });
+      setCoachCheckIn(coachResponse.data);
+      setCoachAnswer(null);
     } catch (_error) {
       setError('Unable to load live dashboard data. Start the backend to see the full experience.');
     } finally {
@@ -202,6 +243,46 @@ function Dashboard() {
       setError(requestError.response?.data?.error || 'Unable to refresh rewards.');
     } finally {
       setRefreshingRewards(false);
+    }
+  };
+
+  const submitRecommendationFeedback = async (exercise, feedbackValue) => {
+    setFeedbackSubmitting(`${exercise.name}-${feedbackValue}`);
+    setFeedback('');
+    setError('');
+
+    try {
+      await api.post('/recommendation-feedback', {
+        exerciseName: exercise.name,
+        feedbackValue,
+        sourceScreen: 'dashboard',
+        context: {
+          goal: state.user?.fitnessGoal,
+          location: state.user?.location,
+          recommendationSource: state.recommendation?.recommendationSource?.type || 'rule-based',
+        },
+      });
+      setFeedback(`Thanks. Your feedback for ${exercise.name} was saved for future recommendation training.`);
+    } catch (requestError) {
+      setError(requestError.response?.data?.error || 'Unable to save recommendation feedback.');
+    } finally {
+      setFeedbackSubmitting('');
+    }
+  };
+
+  const askCoach = async (question) => {
+    if (!question.trim()) {
+      return;
+    }
+
+    setAskingCoach(true);
+    try {
+      const response = await api.post('/coach/ask', { question });
+      setCoachAnswer(response.data);
+    } catch (requestError) {
+      setError(requestError.response?.data?.error || 'FitAI Coach could not answer right now.');
+    } finally {
+      setAskingCoach(false);
     }
   };
 
@@ -411,24 +492,168 @@ function Dashboard() {
             <div className="fitai-ref-app-card p-6">
               <p className="fitai-ref-kicker">AI Trainer</p>
               <h3 className="fitai-ref-card-title mt-3">Next recommended exercises</h3>
-              <div className="mt-5 space-y-3">
+              <div className="mt-5 space-y-4">
                 {(state.recommendation?.exercises || []).slice(0, 4).map((exercise) => (
                   <div key={exercise.name} className="fitai-ref-list-row">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
+                    {(() => {
+                      const confidence = getConfidenceMeta(exercise.mlProbability || 0);
+                      return (
+                        <>
+                    <div className="w-full flex items-start justify-between gap-4">
+                      <div className="flex-1">
                         <p className="text-lg font-semibold text-white">{exercise.name}</p>
                         <p className="mt-1 text-sm text-slate-400 capitalize">
                           {exercise.category} - {exercise.sets} sets - {exercise.reps} reps
                         </p>
                       </div>
-                      <span className="fitai-ref-chip-dark">
-                        {exercise.reason}
+                      <span className="fitai-ref-chip-dark whitespace-nowrap">
+                        {exercise.equipment || 'no equipment'}
                       </span>
                     </div>
+                    <div className="w-full">
+                      <div className="flex flex-wrap gap-2">
+                        <span className="fitai-ref-chip-dark">
+                          Fit score {Math.round(exercise.recommendationScore || 0)}
+                        </span>
+                        <span className="fitai-ref-chip-dark">
+                          ML {Math.round((exercise.mlProbability || 0) * 100)}%
+                        </span>
+                        <span className={`fitai-confidence-chip ${confidence.toneClass}`}>
+                          {confidence.label}
+                          <ConfidenceTooltip message={confidence.message} />
+                        </span>
+                        {(exercise.categoryProbability || 0) > 0 ? (
+                          <span className="fitai-ref-chip-dark">
+                            Category {Math.round((exercise.categoryProbability || 0) * 100)}%
+                          </span>
+                        ) : null}
+                        {(exercise.fitScoreBreakdown?.recentSuccessScore || 0) > 0 ? (
+                          <span className="fitai-ref-chip-dark">
+                            Recent success +{Math.round(exercise.fitScoreBreakdown?.recentSuccessScore || 0)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="w-full">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Model confidence</p>
+                        <p className="text-sm font-medium text-white">{Math.round((exercise.mlProbability || 0) * 100)}%</p>
+                      </div>
+                      <div className="fitai-confidence-bar mt-2">
+                        <div
+                          className={`fitai-confidence-fill ${confidence.toneClass}`}
+                          style={{ width: `${Math.max(8, Math.round((exercise.mlProbability || 0) * 100))}%` }}
+                        />
+                      </div>
+                    </div>
+                    <p className="w-full text-sm leading-6 text-slate-300">{exercise.reason}</p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => submitRecommendationFeedback(exercise, 1)}
+                        disabled={feedbackSubmitting === `${exercise.name}-1`}
+                        className="fitai-ref-action-secondary px-3 py-2 text-xs font-medium"
+                      >
+                        {feedbackSubmitting === `${exercise.name}-1` ? 'Saving...' : 'Helpful'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => submitRecommendationFeedback(exercise, -1)}
+                        disabled={feedbackSubmitting === `${exercise.name}--1`}
+                        className="fitai-ref-action-secondary px-3 py-2 text-xs font-medium"
+                      >
+                        {feedbackSubmitting === `${exercise.name}--1` ? 'Saving...' : 'Not relevant'}
+                      </button>
+                    </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
             </div>
+          </div>
+
+          <div className="fitai-ref-app-card p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="fitai-ref-kicker">FitAI Coach</p>
+                <h3 className="fitai-ref-card-title mt-2">Daily check-in and guidance</h3>
+                <p className="mt-3 text-sm text-slate-400">
+                  Ask for workout, recovery, nutrition, or progress advice based on your actual FitAI data.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {['What should I focus on today?', 'How can I improve recovery?', 'How is my diet doing?'].map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => {
+                      setCoachQuestion(prompt);
+                      askCoach(prompt);
+                    }}
+                    className="fitai-ref-action-secondary px-4 py-2 text-xs font-medium"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {coachCheckIn ? (
+              <div className="mt-5 rounded-3xl border border-rose-300/15 bg-rose-400/8 p-5">
+                <p className="text-lg font-semibold text-white">{coachCheckIn.headline}</p>
+                <p className="mt-3 text-sm leading-7 text-slate-300">{coachCheckIn.summary}</p>
+                <p className="mt-3 text-sm text-rose-100">{coachCheckIn.motivation}</p>
+                {coachCheckIn.source ? (
+                  <p className="mt-3 text-xs uppercase tracking-[0.2em] text-slate-400">Source: {coachCheckIn.source}</p>
+                ) : null}
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  {coachCheckIn.actions?.map((action) => (
+                    <div key={action} className="fitai-ref-app-card-soft p-4">
+                      <p className="text-sm text-slate-200">{action}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-sm text-slate-400">Recovery cue: {coachCheckIn.recoveryNote}</p>
+              </div>
+            ) : null}
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <input
+                value={coachQuestion}
+                onChange={(event) => setCoachQuestion(event.target.value)}
+                placeholder="Ask FitAI Coach anything about training, diet, or recovery"
+                className="fitai-ref-input"
+              />
+              <button
+                type="button"
+                onClick={() => askCoach(coachQuestion)}
+                disabled={askingCoach}
+                className="fitai-ref-action px-5 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {askingCoach ? 'Thinking...' : 'Ask Coach'}
+              </button>
+            </div>
+
+            {coachAnswer ? (
+              <div className="mt-5 rounded-3xl border border-cyan-300/15 bg-cyan-400/8 p-5">
+                <p className="text-lg font-semibold text-white">Coach answer</p>
+                <p className="mt-3 text-sm leading-7 text-slate-300">{coachAnswer.reply}</p>
+                {coachAnswer.source ? (
+                  <p className="mt-3 text-xs uppercase tracking-[0.2em] text-slate-400">Source: {coachAnswer.source}</p>
+                ) : null}
+                {coachAnswer.actionItems?.length ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {coachAnswer.actionItems.map((item) => (
+                      <span key={item} className="fitai-ref-chip-dark">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           <div className="fitai-ref-app-card p-6">
@@ -559,7 +784,7 @@ function Dashboard() {
                 ['Gym search area', state.user?.preferences?.gymSearchLocation || '--'],
                 ['Session duration', state.user?.preferences?.sessionDuration ? `${state.user.preferences.sessionDuration} min` : '--'],
               ].map(([label, value]) => (
-                <div key={label} className="fitai-ref-list-row">
+                <div key={label} className="fitai-ref-list-row-simple">
                   <span className="text-sm text-slate-400">{label}</span>
                   <span className="text-sm font-medium capitalize text-white">{value}</span>
                 </div>
@@ -577,9 +802,11 @@ function Dashboard() {
                 ['Consistency', `${summary.consistencyScore || 0}%`],
                 ['Performance volume', summary.totalVolume || 0],
               ].map(([label, value]) => (
-                <div key={label} className="fitai-ref-list-row">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{label}</p>
-                  <p className="mt-2 text-lg font-semibold text-white">{value}</p>
+                <div key={label} className="fitai-ref-list-row-simple">
+                  <div className="flex-1">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{label}</p>
+                    <p className="mt-2 text-lg font-semibold text-white">{value}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -602,8 +829,8 @@ function Dashboard() {
                 state.rewards.badges.slice(0, 4).map((badge) => (
                   <div key={badge._id} className="fitai-ref-list-row">
                     <p className="text-sm font-semibold text-white">{badge.title}</p>
-                    <p className="mt-2 text-sm text-slate-400">{badge.description}</p>
-                    <p className="mt-2 text-xs uppercase tracking-[0.2em] text-emerald-200">{badge.points} pts</p>
+                    <p className="text-sm text-slate-400">{badge.description}</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{badge.points} pts</p>
                   </div>
                 ))
               ) : (
@@ -620,7 +847,7 @@ function Dashboard() {
               {state.workouts.slice(0, 4).map((workout) => (
                 <div key={workout._id} className="fitai-ref-list-row">
                   <p className="text-sm font-semibold text-white">{new Date(workout.date).toLocaleDateString()}</p>
-                  <p className="mt-2 text-sm text-slate-400">
+                  <p className="text-sm text-slate-400">
                     {workout.exercises.length} exercises - {workout.totalDuration} min - {workout.location}
                   </p>
                 </div>
@@ -633,6 +860,9 @@ function Dashboard() {
               <div>
                 <p className="fitai-ref-kicker">Nearby Gyms</p>
                 <h3 className="fitai-ref-card-title mt-2">Find gyms near your area</h3>
+                <p className="mt-2 text-sm text-slate-400">
+                  Search faster, compare closer options, and open the best match directly on map.
+                </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -652,26 +882,34 @@ function Dashboard() {
               </div>
             </div>
 
-            <div className="mt-5 space-y-3">
-              <form onSubmit={handleManualGymSearch} className="fitai-ref-app-card-soft p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Manual Search</p>
-                <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-5 space-y-4">
+              <form onSubmit={handleManualGymSearch} className="fitai-ref-app-card-soft gym-search-shell p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <div className="flex-1">
+                    <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Manual Search</p>
+                    <p className="mt-2 text-sm text-slate-300">Try city, sector, locality, or your exact area.</p>
+                  </div>
+                  <div className="rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-slate-400">
+                    Nearby match finder
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <input
                     value={manualGymQuery}
                     onChange={(event) => setManualGymQuery(event.target.value)}
                     placeholder="Enter area manually, like Noida Sector 18"
-                    className="fitai-ref-input"
+                    className="fitai-ref-input gym-search-input"
                   />
                   <button
                     type="submit"
-                    className="fitai-ref-action px-5 py-3 text-sm font-semibold"
+                    className="fitai-ref-action gym-search-button px-5 py-3 text-sm font-semibold"
                   >
                     Search
                   </button>
                 </div>
                 {loadingSuggestions ? <p className="mt-3 text-xs text-slate-400">Loading suggestions...</p> : null}
                 {locationSuggestions.length ? (
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-3 grid gap-2">
                     {locationSuggestions.map((suggestion) => (
                       <button
                         key={suggestion.id}
@@ -680,7 +918,7 @@ function Dashboard() {
                           setManualGymQuery(suggestion.label);
                           setLocationSuggestions([]);
                         }}
-                        className="fitai-ref-action-secondary w-full px-3 py-2 text-left text-sm text-slate-200"
+                        className="fitai-ref-action-secondary w-full px-3 py-3 text-left text-sm text-slate-200"
                       >
                         {suggestion.label}
                       </button>
@@ -696,9 +934,18 @@ function Dashboard() {
               ) : null}
 
               {nearbyGyms.locationLabel ? (
-                <div className="fitai-ref-app-card-soft px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Search area</p>
-                  <p className="mt-2 text-sm text-white">{nearbyGyms.locationLabel}</p>
+                <div className="fitai-ref-app-card-soft gym-location-shell px-4 py-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Search area</p>
+                      <p className="mt-2 text-sm leading-6 text-white">{nearbyGyms.locationLabel}</p>
+                    </div>
+                    {nearbyGyms.provider ? (
+                      <span className="rounded-full bg-cyan-400/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-100">
+                        {nearbyGyms.provider.replace('_', ' ')}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               ) : null}
 
@@ -712,8 +959,8 @@ function Dashboard() {
               ) : null}
 
               {selectedGym ? (
-                <div className="gym-visual-card rounded-3xl p-4">
-                  <div className="gym-cover rounded-2xl p-4">
+                <div className="gym-visual-card rounded-3xl p-5">
+                  <div className="gym-cover rounded-[1.75rem] p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="text-xs uppercase tracking-[0.2em] text-emerald-100/70">Selected Gym</p>
@@ -723,11 +970,6 @@ function Dashboard() {
                         <span className="rounded-full bg-amber-300/20 px-3 py-1 text-xs font-semibold text-amber-100">
                           FitAI score {selectedGym.fitaiScore}
                         </span>
-                        {nearbyGyms.provider ? (
-                          <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-100">
-                            {nearbyGyms.provider.replace('_', ' ')}
-                          </span>
-                        ) : null}
                       </div>
                     </div>
                     <div className="mt-4 flex items-center gap-1 text-amber-300">
@@ -743,9 +985,9 @@ function Dashboard() {
                         {selectedGym.userRatingCount ? ` | ${selectedGym.userRatingCount} reviews` : ''}
                       </p>
                     ) : (
-                      <p className="mt-2 text-sm text-slate-200">Estimated using FitAI rank and distance</p>
+                      <p className="mt-2 text-sm text-slate-200">Estimated using FitAI rank and distance intelligence</p>
                     )}
-                    <p className="mt-3 text-sm text-slate-100/90">{selectedGym.address}</p>
+                    <p className="mt-4 text-sm leading-6 text-slate-100/90">{selectedGym.address}</p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-100">
                         {selectedGym.distanceKm} km away
@@ -762,7 +1004,7 @@ function Dashboard() {
                   </div>
 
                   {selectedGym.mapEmbedUrl ? (
-                    <div className="mt-4 overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/50">
+                    <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-slate-700 bg-slate-950/50">
                       <iframe
                         title={`${selectedGym.name} map`}
                         src={selectedGym.mapEmbedUrl}
@@ -779,16 +1021,23 @@ function Dashboard() {
                   key={gym.id}
                   type="button"
                   onClick={() => setSelectedGym(gym)}
-                  className={`w-full rounded-2xl p-4 text-left transition ${
+                  className={`w-full rounded-[1.4rem] p-4 text-left transition ${
                     selectedGym?.id === gym.id
-                      ? 'border border-rose-300/30 bg-rose-400/10'
+                      ? 'border border-rose-300/30 bg-rose-400/10 shadow-[0_16px_34px_rgba(232,52,26,0.12)]'
                       : 'fitai-ref-app-card-soft'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-sm font-semibold text-white">{gym.name}</p>
-                      <p className="mt-2 text-sm text-slate-400">{gym.address}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-white">{gym.name}</p>
+                        {selectedGym?.id === gym.id ? (
+                          <span className="rounded-full bg-rose-400/12 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-rose-100">
+                            Selected
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-slate-400">{gym.address}</p>
                     </div>
                     <div className="text-right">
                       <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-100">

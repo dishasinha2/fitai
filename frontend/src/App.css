@@ -524,6 +524,24 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(15, 23, 42, 0.15));
 }
 
+.gym-search-shell {
+  background:
+    linear-gradient(180deg, rgba(22, 27, 35, 0.96), rgba(15, 19, 27, 0.92));
+}
+
+.gym-search-input {
+  min-height: 3.5rem;
+}
+
+.gym-search-button {
+  min-width: 9rem;
+}
+
+.gym-location-shell {
+  background:
+    linear-gradient(180deg, rgba(25, 28, 36, 0.96), rgba(17, 20, 28, 0.92));
+}
+
 .cult-app-shell {
   min-height: 100vh;
   background:
@@ -2076,6 +2094,14 @@
   background: #111315;
   border: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+}
+
+.fitai-ref-app-card > * + *,
+.fitai-ref-auth-card > * + *,
+.fitai-ref-dashboard-hero > * + * {
+  margin-top: 0;
 }
 
 .fitai-ref-auth-card::before,
@@ -2228,14 +2254,26 @@
 .fitai-ref-auth-shell {
   display: grid;
   gap: 24px;
+  min-height: calc(100vh - 92px);
+  align-items: stretch;
 }
 
 .fitai-ref-auth-hero {
-  min-height: 100%;
+  min-height: calc(100vh - 92px);
   background:
     linear-gradient(180deg, rgba(11, 12, 14, 0.25), rgba(11, 12, 14, 0.88)),
     url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1200&q=80') center/cover;
   border: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.fitai-ref-auth-card {
+  min-height: calc(100vh - 92px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .fitai-ref-mini-grid {
@@ -2256,17 +2294,29 @@
 
 .fitai-ref-list-row {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: stretch;
+  gap: 12px;
+  padding: 16px;
+  background: #181a1c;
+  border-left: 2px solid transparent;
+  border-radius: 0;
+}
+
+.fitai-ref-list-row.active {
+  border-left-color: #e8341a;
+  background: rgba(232, 52, 26, 0.08);
+}
+
+.fitai-ref-list-row-simple {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
   background: #181a1c;
   border-left: 2px solid transparent;
-}
-
-.fitai-ref-list-row.active {
-  border-left-color: #e8341a;
-  background: rgba(232, 52, 26, 0.08);
 }
 
 .fitai-ref-chip-dark {
@@ -2282,6 +2332,105 @@
   color: #a09890;
 }
 
+.fitai-confidence-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.fitai-confidence-chip.low {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.22);
+  color: #fcd34d;
+}
+
+.fitai-confidence-chip.medium {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.22);
+  color: #bae6fd;
+}
+
+.fitai-confidence-chip.high {
+  background: rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.22);
+  color: #bbf7d0;
+}
+
+.fitai-confidence-tooltip-group {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.fitai-confidence-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5f3ef;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.fitai-confidence-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  width: 240px;
+  transform: translateX(-50%);
+  padding: 10px 12px;
+  background: rgba(11, 12, 14, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f5f3ef;
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+  z-index: 20;
+}
+
+.fitai-confidence-tooltip-group:hover .fitai-confidence-tooltip,
+.fitai-confidence-tooltip-group:focus-within .fitai-confidence-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.fitai-confidence-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.fitai-confidence-fill {
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+.fitai-confidence-fill.low {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.fitai-confidence-fill.medium {
+  background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+}
+
+.fitai-confidence-fill.high {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
 .fitai-ref-profile-box {
   background: #181a1c;
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -2293,6 +2442,12 @@
     grid-template-columns: 1fr;
   }
 
+  .fitai-ref-auth-shell,
+  .fitai-ref-auth-hero,
+  .fitai-ref-auth-card {
+    min-height: auto;
+  }
+
   .fitai-ref-page-hero {
     min-height: 100vh;
     background-attachment: scroll;
@@ -2300,6 +2455,24 @@
 
   .fitai-ref-page-hero-inner {
     padding-top: 5rem;
+  }
+
+  .fitai-ref-app-card {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .fitai-ref-app-card {
+    padding: 16px;
+  }
+
+  .fitai-ref-list-row {
+    padding: 12px;
+  }
+
+  .fitai-ref-stat-block {
+    padding: 12px;
   }
 }
 
@@ -2311,4 +2484,39 @@
   .fitai-ref-page-hero::after {
     display: none;
   }
+}
+
+/* Improved spacing for dashboard cards */
+.fitai-ref-app-card {
+  overflow: hidden;
+}
+
+.fitai-ref-list-row > div + div {
+  margin-top: 8px;
+}
+
+.fitai-ref-list-row > p {
+  margin: 8px 0 0 0;
+}
+
+/* Better spacing for badge cards */
+.fitai-ref-list-row .text-sm + .text-sm {
+  margin-top: 8px;
+}
+
+.fitai-ref-list-row .text-xs {
+  margin-top: 8px;
+}
+
+/* Improved stat block consistency */
+.fitai-ref-stat-block {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+/* Better alignment for exercise cards */
+.space-y-4 > .fitai-ref-list-row:not(:first-child) {
+  margin-top: 16px;
 }

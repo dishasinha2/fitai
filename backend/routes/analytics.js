@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const authMiddleware = require('../middleware/auth');
 const adminMiddleware = require('../middleware/admin');
 const {
@@ -11,6 +13,7 @@ const {
 } = require('../db');
 
 const router = express.Router();
+const DATASET_PATH = path.join(__dirname, '..', 'ml', 'data', 'training_dataset.jsonl');
 
 router.get('/overview', authMiddleware, adminMiddleware, (req, res) => {
   try {
@@ -25,6 +28,8 @@ router.get('/overview', authMiddleware, adminMiddleware, (req, res) => {
     const reminders = db.prepare('SELECT COUNT(*) AS count FROM reminders').get().count;
     const unreadNotifications = db.prepare('SELECT COUNT(*) AS count FROM notifications WHERE is_read = 0').get().count;
     const dietPlans = db.prepare('SELECT COUNT(*) AS count FROM diet_plans').get().count;
+    const recommendationFeedback = db.prepare('SELECT COUNT(*) AS count FROM recommendation_feedback').get().count;
+    const authAttempts = db.prepare('SELECT COUNT(*) AS count FROM auth_attempt_logs').get().count;
 
     const last7Days = Array.from({ length: 7 }, (_, index) => {
       const current = new Date();
@@ -67,6 +72,8 @@ router.get('/overview', authMiddleware, adminMiddleware, (req, res) => {
         totalDietPlans: dietPlans,
         activeReminders: reminders,
         unreadNotifications,
+        recommendationFeedback,
+        authAttempts,
       },
       workoutsByDay,
       signupsByGoal,
@@ -75,6 +82,27 @@ router.get('/overview', authMiddleware, adminMiddleware, (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+router.get('/training-dataset', authMiddleware, adminMiddleware, (_req, res) => {
+  try {
+    if (!fs.existsSync(DATASET_PATH)) {
+      return res.json({
+        exists: false,
+        rows: 0,
+        preview: [],
+      });
+    }
+
+    const lines = fs.readFileSync(DATASET_PATH, 'utf8').split('\n').filter(Boolean);
+    return res.json({
+      exists: true,
+      rows: lines.length,
+      preview: lines.slice(0, 5).map((line) => JSON.parse(line)),
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
   }
 });
 

@@ -83,6 +83,21 @@ function Progress() {
     }
   };
 
+  const downloadReport = () => {
+    if (!report) {
+      return;
+    }
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'fitai-progress-report.json';
+    link.click();
+    window.URL.revokeObjectURL(url);
+    setMessage('Progress report downloaded.');
+  };
+
   const weightChart = {
     labels: data.logs.map((entry) => new Date(entry.date).toLocaleDateString()),
     datasets: [
@@ -257,6 +272,13 @@ function Progress() {
                 className="fitai-ref-action-secondary px-4 py-3 text-sm font-medium"
               >
                 Copy Report
+              </button>
+              <button
+                type="button"
+                onClick={downloadReport}
+                className="fitai-ref-action-secondary px-4 py-3 text-sm font-medium"
+              >
+                Download JSON
               </button>
             </div>
             <p className="mt-4 text-sm text-slate-300">

@@ -5,12 +5,23 @@ import api from '../lib/api';
 
 function AdminOverview() {
   const [analytics, setAnalytics] = useState({ metrics: {}, latestContacts: [] });
+  const [mlStatus, setMlStatus] = useState({
+    dataset_size: 0,
+    model_trained: false,
+    last_training_time: null,
+  });
+  const [mlMessage, setMlMessage] = useState('');
+  const [retraining, setRetraining] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await api.get('/analytics/overview');
-        setAnalytics(response.data);
+        const [analyticsResponse, mlResponse] = await Promise.all([
+          api.get('/analytics/overview'),
+          api.get('/ml/status'),
+        ]);
+        setAnalytics(analyticsResponse.data);
+        setMlStatus(mlResponse.data);
       } catch (_error) {
         setAnalytics({ metrics: {}, latestContacts: [] });
       }
@@ -18,6 +29,24 @@ function AdminOverview() {
 
     load();
   }, []);
+
+  const retrainModel = async () => {
+    setRetraining(true);
+    setMlMessage('');
+
+    try {
+      const response = await api.post('/ml/retrain');
+      setMlStatus((current) => ({
+        ...current,
+        ...(response.data.status || current),
+      }));
+      setMlMessage(`Model retrained on ${response.data.train?.dataset_size || 0} training rows.`);
+    } catch (error) {
+      setMlMessage(error.response?.data?.error || 'Unable to retrain the model right now.');
+    } finally {
+      setRetraining(false);
+    }
+  };
 
   return (
     <Layout
@@ -57,6 +86,42 @@ function AdminOverview() {
                 <p className="mt-2 text-sm text-slate-400">Handle demo, premium, support, and partnership requests.</p>
               </Link>
             </div>
+          </div>
+
+          <div className="fitai-ref-app-card p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="fitai-ref-kicker">ML Control</p>
+                <h3 className="fitai-ref-card-title mt-2">Dataset and model health</h3>
+              </div>
+              <button
+                type="button"
+                onClick={retrainModel}
+                disabled={retraining}
+                className="fitai-ref-action px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {retraining ? 'Retraining...' : 'Retrain Model'}
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {[
+                ['Dataset Rows', mlStatus.dataset_size || 0],
+                ['Model Status', mlStatus.model_trained ? 'Ready' : 'Not trained'],
+                ['Last Training', mlStatus.last_training_time ? 'Available' : 'Pending'],
+                ['ML Engine', 'Random Forest'],
+              ].map(([label, value]) => (
+                <div key={label} className="fitai-ref-stat-block p-4">
+                  <p className="fitai-ref-stat-label">{label}</p>
+                  <p className="fitai-ref-stat-value mt-3">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {mlStatus.last_training_time ? (
+              <p className="mt-4 text-sm text-slate-400">Last trained: {new Date(mlStatus.last_training_time).toLocaleString()}</p>
+            ) : null}
+            {mlMessage ? <p className="mt-4 text-sm text-rose-100">{mlMessage}</p> : null}
           </div>
         </section>
 

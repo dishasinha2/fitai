@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import PublicHeader from './PublicHeader';
+import AppFooter from './AppFooter';
 import { saveSession } from '../lib/session';
 
 const initialState = {
@@ -88,140 +89,145 @@ function Signup() {
       <PublicHeader />
       <div className="mx-auto flex min-h-[calc(100vh-92px)] w-full max-w-5xl items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
         <div className="fitai-ref-auth-card w-full p-8 sm:p-10">
-        <div className="max-w-3xl">
-          <p className="fitai-ref-kicker">Signup</p>
-          <h1 className="fitai-ref-app-title mt-3">Create your FitAI athlete profile</h1>
-          <p className="fitai-ref-copy mt-3">
-            Set your body metrics, goal, activity level, and workout location so the AI trainer and diet planner can
-            personalize everything from day one.
-          </p>
-        </div>
+          <div className="max-w-3xl">
+            <p className="fitai-ref-kicker">Signup</p>
+            <h1 className="fitai-ref-app-title mt-3">Create your FitAI athlete profile</h1>
+            <p className="fitai-ref-copy mt-3">
+              Set your body metrics, goal, activity level, and workout location so the AI trainer and diet planner can
+              personalize everything from day one.
+            </p>
+          </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 grid gap-5 md:grid-cols-2">
-          {[
-            ['name', 'Full name', 'text'],
-            ['email', 'Email address', 'email'],
-            ['password', 'Password', 'password'],
-            ['age', 'Age', 'number'],
-            ['weight', 'Weight (kg)', 'number'],
-            ['height', 'Height (cm)', 'number'],
-          ].map(([name, label, type]) => (
-            <label key={name} className="block">
-              <span className="mb-2 block text-sm text-slate-300">{label}</span>
-              <input
-                name={name}
-                type={type}
-                required={['name', 'email', 'password'].includes(name)}
-                value={form[name]}
+          <form onSubmit={handleSubmit} className="mt-8 grid gap-5 md:grid-cols-2">
+            {[
+              ['name', 'Full name', 'text'],
+              ['email', 'Email address', 'email'],
+              ['password', 'Password', 'password'],
+              ['age', 'Age', 'number'],
+              ['weight', 'Weight (kg)', 'number'],
+              ['height', 'Height (cm)', 'number'],
+            ].map(([name, label, type]) => (
+              <label key={name} className="block">
+                <span className="mb-2 block text-sm text-slate-300">{label}</span>
+                <input
+                  name={name}
+                  type={type}
+                  required={['name', 'email', 'password'].includes(name)}
+                  value={form[name]}
+                  onChange={handleChange}
+                  autoComplete={name === 'password' ? 'new-password' : name}
+                  className="fitai-ref-input"
+                />
+              </label>
+            ))}
+
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-300">Fitness goal</span>
+              <select
+                name="fitnessGoal"
+                value={form.fitnessGoal}
                 onChange={handleChange}
-                autoComplete={name === 'password' ? 'new-password' : name}
+                className="fitai-ref-input"
+              >
+                <option value="fat_loss">Fat loss</option>
+                <option value="muscle_gain">Muscle gain</option>
+                <option value="maintenance">Maintenance</option>
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-300">Activity level</span>
+              <select
+                name="activityLevel"
+                value={form.activityLevel}
+                onChange={handleChange}
+                className="fitai-ref-input"
+              >
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-300">Workout location</span>
+              <select
+                name="location"
+                value={form.location}
+                onChange={handleChange}
+                className="fitai-ref-input"
+              >
+                <option value="gym">Gym</option>
+                <option value="home">Home workout mode</option>
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-300">Workout days per week</span>
+              <input
+                name="workoutDaysPerWeek"
+                type="number"
+                min="1"
+                max="7"
+                value={form.preferences.workoutDaysPerWeek}
+                onChange={handlePreferenceChange}
                 className="fitai-ref-input"
               />
             </label>
-          ))}
 
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-300">Fitness goal</span>
-            <select
-              name="fitnessGoal"
-              value={form.fitnessGoal}
-              onChange={handleChange}
-              className="fitai-ref-input"
-            >
-              <option value="fat_loss">Fat loss</option>
-              <option value="muscle_gain">Muscle gain</option>
-              <option value="maintenance">Maintenance</option>
-            </select>
-          </label>
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-300">Preferred session duration (min)</span>
+              <input
+                name="sessionDuration"
+                type="number"
+                min="20"
+                max="120"
+                value={form.preferences.sessionDuration}
+                onChange={handlePreferenceChange}
+                className="fitai-ref-input"
+              />
+            </label>
 
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-300">Activity level</span>
-            <select
-              name="activityLevel"
-              value={form.activityLevel}
-              onChange={handleChange}
-              className="fitai-ref-input"
-            >
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-            </select>
-          </label>
+            <label className="block md:col-span-2">
+              <span className="mb-2 block text-sm text-slate-300">Diet style preference</span>
+              <select
+                name="dietaryPreference"
+                value={form.preferences.dietaryPreference}
+                onChange={handlePreferenceChange}
+                className="fitai-ref-input"
+              >
+                <option value="balanced">Balanced</option>
+                <option value="high_protein">High protein</option>
+                <option value="vegetarian">Vegetarian</option>
+              </select>
+            </label>
 
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-300">Workout location</span>
-            <select
-              name="location"
-              value={form.location}
-              onChange={handleChange}
-              className="fitai-ref-input"
-            >
-              <option value="gym">Gym</option>
-              <option value="home">Home workout mode</option>
-            </select>
-          </label>
+            {error ? (
+              <div className="md:col-span-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                {error}
+              </div>
+            ) : null}
 
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-300">Workout days per week</span>
-            <input
-              name="workoutDaysPerWeek"
-              type="number"
-              min="1"
-              max="7"
-              value={form.preferences.workoutDaysPerWeek}
-              onChange={handlePreferenceChange}
-              className="fitai-ref-input"
-            />
-          </label>
+            <div className="md:col-span-2 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="submit"
+                disabled={loading}
+                className="fitai-ref-action px-6 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? 'Creating account...' : 'Create FitAI Account'}
+              </button>
 
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-300">Preferred session duration (min)</span>
-            <input
-              name="sessionDuration"
-              type="number"
-              min="20"
-              max="120"
-              value={form.preferences.sessionDuration}
-              onChange={handlePreferenceChange}
-              className="fitai-ref-input"
-            />
-          </label>
-
-          <label className="block md:col-span-2">
-            <span className="mb-2 block text-sm text-slate-300">Diet style preference</span>
-            <select
-              name="dietaryPreference"
-              value={form.preferences.dietaryPreference}
-              onChange={handlePreferenceChange}
-              className="fitai-ref-input"
-            >
-              <option value="balanced">Balanced</option>
-              <option value="high_protein">High protein</option>
-              <option value="vegetarian">Vegetarian</option>
-            </select>
-          </label>
-
-          {error && <div className="md:col-span-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</div>}
-
-          <div className="md:col-span-2 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="submit"
-              disabled={loading}
-              className="fitai-ref-action px-6 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? 'Creating account...' : 'Create FitAI Account'}
-            </button>
-
-            <p className="text-sm text-slate-400">
-              Already have an account?{' '}
-              <Link to="/login" className="font-medium text-rose-300 hover:text-rose-200">
-                Login here
-              </Link>
-            </p>
-          </div>
-        </form>
+              <p className="text-sm text-slate-400">
+                Already have an account?{' '}
+                <Link to="/login" className="font-medium text-rose-300 hover:text-rose-200">
+                  Login here
+                </Link>
+              </p>
+            </div>
+          </form>
         </div>
       </div>
+      <AppFooter />
     </div>
   );
 }

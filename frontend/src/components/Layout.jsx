@@ -1,4 +1,6 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import AppFooter from './AppFooter';
+import api from '../lib/api';
 import { clearSession, getStoredUser } from '../lib/session';
 
 const navItems = [
@@ -21,9 +23,15 @@ function Layout({ title, subtitle, heroImage, heroLabel, children }) {
   const user = getStoredUser();
   const visibleNavItems = user?.role === 'admin' ? [...navItems, ...adminNavItems] : navItems;
 
-  const handleLogout = () => {
-    clearSession();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (_error) {
+      // Clear local session even if logout endpoint is temporarily unavailable.
+    } finally {
+      clearSession();
+      navigate('/login');
+    }
   };
 
   return (
@@ -96,6 +104,7 @@ function Layout({ title, subtitle, heroImage, heroLabel, children }) {
         </section>
 
         <main className="fitai-ref-page-content px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+        <AppFooter />
       </div>
     </div>
   );

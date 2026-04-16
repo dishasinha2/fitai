@@ -1,12 +1,22 @@
 const express = require('express');
 const axios = require('axios');
 const authMiddleware = require('../middleware/auth');
+const { optionalAuthMiddleware } = require('../middleware/auth');
 const { buildRecommendation } = require('../services/recommendationEngine');
-const { calculateWorkoutTotals, getDayKey, calculateStreak, syncRewardsForStreak } = require('../services/analytics');
 const {
+  calculateWorkoutTotals,
+  getDayKey,
+  calculateStreak,
+  syncRewardsForStreak,
+  buildProgressSummary,
+} = require('../services/analytics');
+const {
+  createAuthAttemptLog,
   createNotification,
   db,
   mapExerciseRow,
+  mapProgressRow,
+  mapRewardRow,
   mapWorkoutTemplateRow,
   mapWorkoutRow,
   getUserById,
@@ -14,6 +24,156 @@ const {
 } = require('../db');
 
 const router = express.Router();
+const PUBLIC_PREVIEW_LIMIT = 10;
+const PUBLIC_PREVIEW_WINDOW_MS = 60 * 1000;
+const publicPreviewRateStore = new Map();
+
+const getClientIpAddress = (req) =>
+  req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket?.remoteAddress || 'unknown';
+
+const hitPublicPreviewLimit = (req) => {
+  const ipAddress = getClientIpAddress(req);
+  const now = Date.now();
+  const current = publicPreviewRateStore.get(ipAddress);
+
+  if (!current || now - current.windowStart > PUBLIC_PREVIEW_WINDOW_MS) {
+    publicPreviewRateStore.set(ipAddress, {
+      count: 1,
+      windowStart: now,
+    });
+    return null;
+  }
+
+  if (current.count >= PUBLIC_PREVIEW_LIMIT) {
+    return {
+      retryAfterSeconds: Math.max(1, Math.ceil((PUBLIC_PREVIEW_WINDOW_MS - (now - current.windowStart)) / 1000)),
+    };
+  }
+
+  current.count += 1;
+  publicPreviewRateStore.set(ipAddress, current);
+  return null;
+};
+
+const logRecommendationAuthAttempt = (req, outcome, details = {}) => {
+  try {
+    createAuthAttemptLog({
+      userId: req.user?.id || null,
+      endpoint: '/api/workouts/recommendations',
+      outcome,
+      tokenSource: req.authState?.tokenSource || 'none',
+      ipAddress: getClientIpAddress(req),
+      userAgent: req.header('User-Agent') || '',
+      details,
+    });
+  } catch (_error) {
+    // Keep recommendation flow resilient even if analytics logging fails.
+  }
+};
+
+const buildPreviewRecommendationPayload = (plan) => ({
+  ...plan,
+  preview: true,
+  message: 'Sign in for personalized recommendations',
+  demoProfile: {
+    name: 'Demo Athlete',
+    age: 26,
+    weight: 68,
+    goal: 'maintenance',
+    experience: 'beginner',
+    location: 'gym',
+  },
+  sampleData: {
+    recentWorkouts: 6,
+    streakDays: 3,
+    consistencyScore: 72,
+    highlight: 'Preview uses sample athlete data to showcase FitAI recommendations, guidance, and progress insights.',
+  },
+  cta: {
+    primary: {
+      label: 'Create account',
+      path: '/signup',
+    },
+    secondary: {
+      label: 'Log in',
+      path: '/login',
+    },
+  },
+});
+
+const buildPreviewSessionPayload = ({ recommendation, user }) => ({
+  workflow: [
+    '1. User logs in',
+    '2. Sets goals and profile',
+    '3. Starts workout session',
+    '4. Tracks exercises',
+    '5. AI suggests next exercise',
+    '6. Shows guidance video',
+    '7. Updates progress and rewards',
+    '8. Repeat cycle',
+  ],
+  recommendation,
+  sessionDefaults: {
+    location: user.location,
+    sessionDuration: user.preferences?.sessionDuration || 45,
+  },
+  preview: true,
+  message: 'Sign in for personalized workout sessions',
+  demoProfile: {
+    name: user.name,
+    goal: user.fitnessGoal,
+    experience: user.activityLevel,
+    location: user.location,
+  },
+  sampleData: {
+    recentWorkouts: 6,
+    streakDays: 3,
+    consistencyScore: 72,
+    sessionDuration: user.preferences?.sessionDuration || 45,
+  },
+  cta: {
+    primary: {
+      label: 'Create account',
+      path: '/signup',
+    },
+    secondary: {
+      label: 'Log in',
+      path: '/login',
+    },
+  },
+});
+
+const buildPersonalizedRecommendationPayload = ({ plan, user, recentWorkouts, rewards, progressSummary }) => ({
+  ...plan,
+  preview: false,
+  personalization: {
+    profile: {
+      age: user.age,
+      weight: user.weight,
+      goal: user.fitnessGoal,
+      experience: user.activityLevel,
+      location: user.location,
+      sessionDuration: user.preferences?.sessionDuration || 45,
+      workoutDaysPerWeek: user.preferences?.workoutDaysPerWeek || 3,
+    },
+    history: {
+      recentWorkoutCount: recentWorkouts.length,
+      recentExercises: recentWorkouts
+        .flatMap((workout) => workout.exercises || [])
+        .map((exercise) => exercise.name)
+        .filter(Boolean)
+        .slice(0, 8),
+      lastWorkoutDate: recentWorkouts[0]?.date || null,
+    },
+    performance: {
+      streakDays: calculateStreak(recentWorkouts),
+      consistencyScore: progressSummary.consistencyScore,
+      rewardPoints: rewards.reduce((sum, reward) => sum + Number(reward.points || 0), 0),
+      averageWorkoutDuration: progressSummary.averageWorkoutDuration,
+      topMuscleGroups: progressSummary.muscleGroupFocus.slice(0, 3),
+    },
+  },
+});
 
 router.get('/', authMiddleware, async (req, res) => {
   try {
@@ -113,46 +273,161 @@ router.delete('/templates/:templateId', authMiddleware, (req, res) => {
   }
 });
 
-router.get('/recommendations', authMiddleware, async (req, res) => {
+router.get('/recommendations', optionalAuthMiddleware, async (req, res) => {
   try {
-    const user = getUserById(req.user.id);
-    const recentWorkouts = db
-      .prepare('SELECT * FROM workouts WHERE user_id = ? ORDER BY date DESC LIMIT 5')
-      .all(Number(req.user.id))
-      .map(mapWorkoutRow);
+    const isPreview = !req.user?.id;
+
+    if (isPreview) {
+      const limitState = hitPublicPreviewLimit(req);
+      if (limitState) {
+        logRecommendationAuthAttempt(req, 'public_rate_limited', limitState);
+        return res.status(429).json({
+          error: 'Public preview limit reached. Please wait a minute and try again.',
+          retryAfterSeconds: limitState.retryAfterSeconds,
+          message: 'Sign in for personalized recommendations',
+        });
+      }
+    }
+
+    const user = isPreview
+      ? {
+          id: 'preview-user',
+          name: 'Demo Athlete',
+          age: 26,
+          weight: 68,
+          fitnessGoal: 'maintenance',
+          activityLevel: 'beginner',
+          location: 'gym',
+          preferences: {
+            workoutDaysPerWeek: 4,
+            sessionDuration: 45,
+          },
+        }
+      : getUserById(req.user.id);
+
+    const allWorkouts = isPreview
+      ? []
+      : db
+          .prepare('SELECT * FROM workouts WHERE user_id = ? ORDER BY date DESC')
+          .all(Number(req.user.id))
+          .map(mapWorkoutRow);
+    const recentWorkouts = isPreview ? [] : allWorkouts.slice(0, 5);
+
+    const rewards = isPreview
+      ? [
+          { points: 120, title: 'Consistency Builder' },
+          { points: 80, title: 'Workout Streak' },
+        ]
+      : db
+          .prepare('SELECT * FROM rewards WHERE user_id = ? ORDER BY awarded_at DESC')
+          .all(Number(req.user.id))
+          .map(mapRewardRow);
+
+    const progressLogs = isPreview
+      ? [
+          {
+            date: new Date().toISOString(),
+            weight: user.weight,
+            consistencyScore: 72,
+          },
+        ]
+      : db
+          .prepare('SELECT * FROM progress_logs WHERE user_id = ? ORDER BY date ASC')
+          .all(Number(req.user.id))
+          .map(mapProgressRow);
+
+    const progressSummary = buildProgressSummary({
+      user,
+      workouts: isPreview ? recentWorkouts : allWorkouts.slice().reverse(),
+      progressLogs,
+      rewards,
+    });
+
     const plan = await buildRecommendation({ user, previousWorkouts: recentWorkouts });
-    res.json(plan);
+
+    const responsePayload = isPreview
+      ? buildPreviewRecommendationPayload(plan)
+      : buildPersonalizedRecommendationPayload({
+          plan,
+          user,
+          recentWorkouts,
+          rewards,
+          progressSummary,
+        });
+
+    logRecommendationAuthAttempt(
+      req,
+      isPreview ? req.authState?.outcome || 'public_preview' : 'authenticated',
+      {
+        preview: isPreview,
+        recommendationCount: responsePayload.exercises?.length || 0,
+      },
+    );
+
+    res.json(responsePayload);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
 
-router.post('/session/start', authMiddleware, async (req, res) => {
+router.post('/session/start', optionalAuthMiddleware, async (req, res) => {
   try {
-    const user = getUserById(req.user.id);
-    const recentWorkouts = db
-      .prepare('SELECT * FROM workouts WHERE user_id = ? ORDER BY date DESC LIMIT 5')
-      .all(Number(req.user.id))
-      .map(mapWorkoutRow);
+    const isPreview = !req.user?.id;
+
+    if (isPreview) {
+      const limitState = hitPublicPreviewLimit(req);
+      if (limitState) {
+        return res.status(429).json({
+          error: 'Public preview limit reached. Please wait a minute and try again.',
+          retryAfterSeconds: limitState.retryAfterSeconds,
+          message: 'Sign in for personalized workout sessions',
+        });
+      }
+    }
+
+    const user = isPreview
+      ? {
+          id: 'preview-user',
+          name: 'Demo Athlete',
+          fitnessGoal: 'maintenance',
+          activityLevel: 'beginner',
+          location: 'gym',
+          preferences: {
+            workoutDaysPerWeek: 4,
+            sessionDuration: 45,
+          },
+        }
+      : getUserById(req.user.id);
+    const recentWorkouts = isPreview
+      ? []
+      : db
+          .prepare('SELECT * FROM workouts WHERE user_id = ? ORDER BY date DESC LIMIT 5')
+          .all(Number(req.user.id))
+          .map(mapWorkoutRow);
     const recommendation = await buildRecommendation({ user, previousWorkouts: recentWorkouts });
 
-    res.json({
-      workflow: [
-        '1. User logs in',
-        '2. Sets goals and profile',
-        '3. Starts workout session',
-        '4. Tracks exercises',
-        '5. AI suggests next exercise',
-        '6. Shows guidance video',
-        '7. Updates progress and rewards',
-        '8. Repeat cycle',
-      ],
-      recommendation,
-      sessionDefaults: {
-        location: user.location,
-        sessionDuration: user.preferences?.sessionDuration || 45,
-      },
-    });
+    res.json(
+      isPreview
+        ? buildPreviewSessionPayload({ recommendation, user })
+        : {
+            workflow: [
+              '1. User logs in',
+              '2. Sets goals and profile',
+              '3. Starts workout session',
+              '4. Tracks exercises',
+              '5. AI suggests next exercise',
+              '6. Shows guidance video',
+              '7. Updates progress and rewards',
+              '8. Repeat cycle',
+            ],
+            recommendation,
+            sessionDefaults: {
+              location: user.location,
+              sessionDuration: user.preferences?.sessionDuration || 45,
+            },
+            preview: false,
+          },
+    );
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

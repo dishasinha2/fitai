@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const authMiddleware = require('../middleware/auth');
+const { optionalAuthMiddleware } = require('../middleware/auth');
 const { getUserById } = require('../db');
 
 const router = express.Router();
@@ -37,7 +38,7 @@ const fallbackGymCatalog = [
   {
     id: 'fitai-noida-1',
     name: 'Anytime Fitness Noida Sector 18',
-    regionKeys: ['noida', 'sector 18', 'uttar pradesh'],
+    regionKeys: ['noida', 'sector 18', 'noida sector 18'],
     address: 'Sector 18, Noida, Uttar Pradesh',
     lat: 28.5708,
     lon: 77.3272,
@@ -45,7 +46,7 @@ const fallbackGymCatalog = [
   {
     id: 'fitai-noida-2',
     name: 'Cult Gym Noida Sector 62',
-    regionKeys: ['noida', 'sector 62', 'uttar pradesh'],
+    regionKeys: ['noida', 'sector 62', 'noida sector 62'],
     address: 'Sector 62, Noida, Uttar Pradesh',
     lat: 28.6289,
     lon: 77.3649,
@@ -53,7 +54,7 @@ const fallbackGymCatalog = [
   {
     id: 'fitai-delhi-1',
     name: 'Golds Gym Saket',
-    regionKeys: ['delhi', 'saket', 'new delhi'],
+    regionKeys: ['delhi', 'saket', 'new delhi', 'south delhi'],
     address: 'Saket, New Delhi, Delhi',
     lat: 28.5245,
     lon: 77.2066,
@@ -69,7 +70,7 @@ const fallbackGymCatalog = [
   {
     id: 'fitai-gurgaon-1',
     name: 'Cult Fit Gurgaon Sector 29',
-    regionKeys: ['gurgaon', 'gurugram', 'sector 29', 'haryana'],
+    regionKeys: ['gurgaon', 'gurugram', 'sector 29', 'gurgaon sector 29'],
     address: 'Sector 29, Gurugram, Haryana',
     lat: 28.4675,
     lon: 77.0726,
@@ -77,14 +78,34 @@ const fallbackGymCatalog = [
   {
     id: 'fitai-gurgaon-2',
     name: 'Anytime Fitness DLF Phase 4',
-    regionKeys: ['gurgaon', 'gurugram', 'dlf', 'phase 4', 'haryana'],
+    regionKeys: ['gurgaon', 'gurugram', 'dlf', 'phase 4', 'dlf phase 4'],
     address: 'DLF Phase 4, Gurugram, Haryana',
     lat: 28.4671,
     lon: 77.0824,
   },
+  {
+    id: 'fitai-ghaziabad-1',
+    name: 'Anytime Fitness Raj Nagar Extension',
+    regionKeys: ['ghaziabad', 'raj nagar extension', 'raj nagar'],
+    address: 'Raj Nagar Extension, Ghaziabad, Uttar Pradesh',
+    lat: 28.7215,
+    lon: 77.4821,
+  },
+  {
+    id: 'fitai-ghaziabad-2',
+    name: 'Cult Fit Indirapuram',
+    regionKeys: ['ghaziabad', 'indirapuram', 'vasundhara'],
+    address: 'Indirapuram, Ghaziabad, Uttar Pradesh',
+    lat: 28.6469,
+    lon: 77.3698,
+  },
 ];
 
 const normalizeText = (value = '') => value.trim().toLowerCase();
+const tokenizeQuery = (value = '') =>
+  normalizeText(value)
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length > 2);
 
 const buildGymRecord = (gym, latitude, longitude, provider = 'fitai_fallback') => ({
   id: gym.id,
@@ -100,8 +121,20 @@ const buildGymRecord = (gym, latitude, longitude, provider = 'fitai_fallback') =
 
 const getFallbackGymsByQuery = (query, latitude, longitude) => {
   const normalizedQuery = normalizeText(query);
+  const tokens = tokenizeQuery(query);
+
   return fallbackGymCatalog
-    .filter((gym) => gym.regionKeys.some((key) => normalizedQuery.includes(key)))
+    .map((gym) => {
+      const phraseMatches = gym.regionKeys.filter((key) => normalizedQuery.includes(key)).length;
+      const tokenMatches = tokens.filter((token) => gym.regionKeys.some((key) => key.includes(token))).length;
+      return {
+        gym,
+        matchScore: phraseMatches * 3 + tokenMatches,
+      };
+    })
+    .filter((item) => item.matchScore > 0)
+    .sort((first, second) => second.matchScore - first.matchScore)
+    .map((item) => item.gym)
     .map((gym) => buildGymRecord(gym, latitude, longitude))
     .sort((first, second) => first.distanceKm - second.distanceKm)
     .slice(0, 8);
@@ -195,7 +228,7 @@ const autocompleteGooglePlaces = async ({ input, latitude, longitude }) => {
     .slice(0, 5);
 };
 
-router.get('/autocomplete', authMiddleware, async (req, res) => {
+router.get('/autocomplete', optionalAuthMiddleware, async (req, res) => {
   const input = String(req.query.q || '').trim();
 
   if (input.length < 2) {
@@ -321,23 +354,23 @@ const searchGooglePlacesGyms = async ({ query, latitude, longitude, hasCoordinat
     .filter(Boolean);
 };
 
-router.get('/nearby-gyms', authMiddleware, async (req, res) => {
+router.get('/nearby-gyms', optionalAuthMiddleware, async (req, res) => {
   const query = String(req.query.q || '').trim();
   const latitudeQuery = Number(req.query.lat);
   const longitudeQuery = Number(req.query.lon);
   const hasCoordinates = Number.isFinite(latitudeQuery) && Number.isFinite(longitudeQuery);
+  let place = null;
+  let latitude = latitudeQuery;
+  let longitude = longitudeQuery;
+  let locationQuery = query || '';
 
   try {
-    const user = getUserById(req.user.id);
-    const locationQuery = query || user?.preferences?.gymSearchLocation || req.query.label || '';
+    const user = req.user?.id ? getUserById(req.user.id) : null;
+    locationQuery = query || user?.preferences?.gymSearchLocation || req.query.label || '';
 
     if (!locationQuery && !hasCoordinates) {
       return res.status(400).json({ error: 'Add a city or area in settings to find nearby gyms.' });
     }
-
-    let place = null;
-    let latitude = latitudeQuery;
-    let longitude = longitudeQuery;
 
     if (!hasCoordinates) {
       const geocodeResponse = await axios.get('https://nominatim.openstreetmap.org/search', {
@@ -452,14 +485,16 @@ router.get('/nearby-gyms', authMiddleware, async (req, res) => {
   } catch (error) {
     const fallbackQuery = normalizeText(query || req.query.label || '');
     if (fallbackQuery) {
-      const fallbackGyms = getFallbackGymsByQuery(fallbackQuery, 28.6139, 77.209);
+      const fallbackLatitude = Number.isFinite(latitude) ? latitude : 28.6139;
+      const fallbackLongitude = Number.isFinite(longitude) ? longitude : 77.209;
+      const fallbackGyms = getFallbackGymsByQuery(fallbackQuery, fallbackLatitude, fallbackLongitude);
       if (fallbackGyms.length) {
         return res.json({
           locationQuery: query || req.query.label || '',
           center: {
-            label: query || req.query.label || 'Fallback search area',
-            lat: 28.6139,
-            lon: 77.209,
+            label: place?.display_name || query || req.query.label || 'Fallback search area',
+            lat: fallbackLatitude,
+            lon: fallbackLongitude,
           },
           radiusUsed: 15000,
           provider: 'fitai_fallback',
