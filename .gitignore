@@ -8,3 +8,5 @@ backend/fitai.sqlite-wal
 backend/.env
 frontend/.env
 *.log
+__pycache__/
+*.pyc
